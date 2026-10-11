@@ -154,6 +154,7 @@ Statuses: `201`, `400`, `401`, `403`, `422` (`VALIDATION_FAILED`, `DUPLICATE_NAM
 ### GET /api/materials
 
 Purpose: list materials with filters and pagination.
+Request: none (auth required; query parameters below).
 Query: `?page=1&perPage=50&type=RAW|CONSUMABLE&search=<name substring>&includeInactive=false`.
 
 Response `200`:
@@ -165,13 +166,12 @@ Response `200`:
 ```
 Statuses: `200`, `401`, `422` (invalid filter values), `500`.
 
----
-
-### GET /api/materials/{id}
+---### GET /api/materials/{id}
 
 Purpose: retrieve one material.
-Response `200`: Material resource as above.
-
+Request: none (auth required; material id in path).
+Response `200`: Material resource as in `GET /api/materials` (single item shape).
+Errors: standard error payload.
 Statuses: `200`, `401`, `404`, `500`.
 
 ---
@@ -205,6 +205,7 @@ Statuses: `201`, `400`, `401`, `403`, `422` (`VALIDATION_FAILED`, `DUPLICATE_NAM
 ### GET /api/suppliers
 
 Purpose: list suppliers.
+Request: none (auth required; query parameters below).
 Query: `?page=&perPage=&includeInactive=false&search=`.
 Response `200`: paginated supplier items as above.
 Statuses: `200`, `401`, `422`, `500`.
@@ -214,6 +215,9 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/suppliers/{id}
 
 Purpose: retrieve one supplier (active or inactive).
+Request: none (auth required; supplier id in path).
+Response `200`: Supplier resource as in `POST /api/suppliers` (with `is_active` reflecting current state).
+Errors: standard error payload.
 Statuses: `200`, `401`, `404`, `500`.
 
 ---
@@ -278,6 +282,7 @@ Statuses: `201`, `400`, `401`, `403`, `404` (supplier id unknown), `422` (`VALID
 ### GET /api/receipts
 
 Purpose: list receipts.
+Request: none (auth required; query parameters below).
 Query: `?page=&perPage=&supplier_id=&material_id=&date_from=&date_to=`.
 Response `200`: paginated receipt headers with item counts (not full items).
 Statuses: `200`, `401`, `422`, `500`.
@@ -287,7 +292,9 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/receipts/{id}
 
 Purpose: retrieve one receipt with full items.
-Response `200`: Receipt resource as in POST response.
+Request: none (auth required; receipt id in path).
+Response `200`: Receipt resource as in `POST /api/receipts` response.
+Errors: standard error payload.
 Statuses: `200`, `401`, `404`, `500`.
 
 ---
@@ -310,6 +317,13 @@ Statuses: `201`, `400`, `401`, `404` (material id unknown), `409` (`NEGATIVE_STO
 ### POST /api/wastes
 
 Purpose: record one waste of one material (REQ-041) — same shape, rules and statuses as `POST /api/consumptions`, distinct ledger type `WASTE`.
+Authorization: Operator, Manager, Admin.
+Request:
+```json
+{ "material_id": 1, "quantity": "0.100", "recorded_at": "2026-10-11T09:00:00+00:00 or null", "note": "Spoiled milk — string|null (≤500)" }
+```
+Response `201`: `{ "id": 56, "material_id": 1, "quantity": "0.100", "recorded_at": "...", "created_by_user_id": 2, "stock_movement_id": 884 }`
+Statuses: `201`, `400`, `401`, `404` (material id unknown), `409` (`NEGATIVE_STOCK_BLOCKED`), `422`, `500`.
 
 ---
 
@@ -357,7 +371,9 @@ Statuses: `201`, `400`, `401`, `404`, `422` (duplicate material, invalid values,
 ### GET /api/stocktakes/{id}
 
 Purpose: retrieve a stocktake with counts and deltas.
-Response `200`: the resource shape as in POST.
+Request: none (auth required; stocktake id in path).
+Response `200`: the resource shape as in `POST /api/stocktakes` (with `status` either `DRAFT` or `COMMITTED`).
+Errors: standard error payload.
 Statuses: `200`, `401`, `404`, `500`.
 
 ---
@@ -377,6 +393,7 @@ Statuses: `200`, `400`, `401`, `403`, `404`, `409` (`STOCKTAKE_NOT_DRAFT`, `APPR
 ### GET /api/inventory
 
 Purpose: current inventory overview (REQ-070): material, stock on hand, base unit, type, below-threshold flag.
+Request: none (auth required; query parameters below).
 Query: `?page=&perPage=&type=RAW|CONSUMABLE&belowThresholdOnly=false`.
 Response `200`:
 ```json
@@ -392,6 +409,7 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/inventory/{materialId}
 
 Purpose: current stock on hand and detail for one material (REQ-013 read).
+Request: none (auth required; material id in path).
 Response `200`: single item shape as above.
 Statuses: `200`, `401`, `404`, `500`.
 
@@ -400,6 +418,7 @@ Statuses: `200`, `401`, `404`, `500`.
 ### GET /api/inventory/{materialId}/movements
 
 Purpose: movement history for a material (REQ-061).
+Request: none (auth required; material id in path and query parameters below).
 Query: `?page=&perPage=&movement_type=RECEIPT|CONSUMPTION|WASTE|ADJUSTMENT|STOCKTAKE_DELTA&date_from=&date_to=`, newest first.
 Response `200`:
 ```json
@@ -415,6 +434,7 @@ Statuses: `200`, `401`, `404` (unknown material), `422`, `500`.
 ### GET /api/reports/inventory
 
 Purpose: same data as `GET /api/inventory`, full-fidelity (all pages available, no `belowThresholdOnly` shorthand limits); kept as a separate route for reporting semantics and export symmetry.
+Request: none (auth required; query parameters below).
 Query: `?type=&date=` (date snapshot reconstruction is **out of scope** — `date` accepted only as `today`).
 Response `200`: same item shape as `GET /api/inventory`.
 Statuses: `200`, `401`, `422`, `500`.
@@ -424,6 +444,7 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/reports/movements
 
 Purpose: movement aggregates (REQ-071).
+Request: none (auth required; query parameters below).
 Query: `?date_from=&date_to=&material_id=&movement_type=`.
 Response `200`:
 ```json
@@ -436,6 +457,7 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/reports/inventory/export.csv
 
 Purpose: CSV export (REQ-072) of the current-inventory report, honouring `?type=`.
+Request: none (auth required; `?type=` query filter optional).
 Response `200`, `Content-Type: text/csv; charset=utf-8`:
 ```csv
 material_id,name,type,base_unit,stock_on_hand,below_threshold
@@ -449,6 +471,7 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/reports/movements/export.csv
 
 Purpose: CSV export of the movement report, honouring the same filters.
+Request: none (auth required; same query filters as `GET /api/reports/movements`).
 Response `200`, `Content-Type: text/csv`:
 ```csv
 material_id,movement_type,total_quantity,movement_count
@@ -461,6 +484,7 @@ Statuses: `200`, `401`, `422`, `500`.
 ### GET /api/audit-logs
 
 Purpose: read the audit trail (REQ-112). Admin only.
+Request: none (auth required; query parameters below).
 Query: `?page=&perPage=&actor_user_id=&action=&date_from=&date_to=`.
 Response `200`:
 ```json
