@@ -27,8 +27,8 @@ Out of scope unless explicitly approved:
 | --- | --- | --- |
 | 0 | VERIFIED | Development environment and repository readiness |
 | 1 | VERIFIED | Requirements, domain model, and API contract |
-| 2 | NOT STARTED | Backend domain model and migrations |
-| 3 | NOT STARTED | Materials and inventory API |
+| 2 | VERIFIED | Backend domain model and migrations |
+| 3 | VERIFIED | Materials and inventory API |
 | 4 | NOT STARTED | Suppliers, receipts, and batches |
 | 5 | NOT STARTED | Consumption, waste, adjustments, and stocktaking |
 | 6 | NOT STARTED | Frontend design system and application shell |
@@ -178,7 +178,7 @@ Important review points for Phase 1:
 
 ## Phase 2: Backend domain model and database migrations
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - implement the approved domain model in Symfony
@@ -224,12 +224,21 @@ Exit criteria and definition of done:
 - backend can move to business-feature API development
 
 Unresolved business decisions:
-- which fields are immutable once recorded and which can be edited
-- approval rules for historical corrections
+- which fields are immutable once recorded and which can be edited (resolved by default: OD-7 adopted per docs/plans/phase-2-plan.md)
+- approval rules for historical corrections (resolved by default: OD-3 adopted per docs/plans/phase-2-plan.md)
+
+Verified evidence (phase 2):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 (feat/phase-2-schema, base docs/phase-1-requirements-and-contract)
+- 13 entities + 8 enums + 14 repositories + migration Version20261012002054
+- `php bin/console lint:container` → "linted successfully"
+- `php bin/console doctrine:schema:validate` → mapping OK; schema "in sync"
+- migration down/up re-executed successfully on TEST db; dev db untouched
+- `php vendor/bin/phpunit --testdox` → OK (13 tests, 36 assertions), incl. scale-3 decimal round-trips, unique constraints, not-null attribution, jsonb round-trip, and FK append-only guard on stock_movement
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
 
 ## Phase 3: Materials and inventory API
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - expose APIs for materials and inventory quantity management
@@ -273,6 +282,15 @@ Exit criteria and definition of done:
 
 Unresolved business decisions:
 - whether some inventory-level rounding can occur at creation time or only at reporting time
+
+Verified evidence (phase 3):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 (feat/phase-3-materials-api, base feat/phase-2-schema)
+- Implemented: GET /api/units; POST/GET/PATCH /api/materials (filters, pagination, contract error codes incl. DUPLICATE_NAME, base_unit immutability 422); GET /api/inventory, /api/inventory/{id}, /api/inventory/{id}/movements (ledger-derived stock per INV-3, below-threshold flag, movement_type/date filters)
+- `php vendor/bin/phpunit` → OK (31 tests, 81 assertions), incl. exact ledger-sum reconciliation ("7.625"), scale-3 validation, duplicate-name and invalid-unit rejections, newest-first history, 404/422/400 error paths
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync
+- Auth (401/403) deliberately deferred to Phase 9 (OD-8); recorded in docs/plans/phase-3-plan.md
 
 ## Phase 4: Suppliers, receipts, and batches
 

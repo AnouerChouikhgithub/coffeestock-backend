@@ -29,10 +29,10 @@ Last updated: 2026-10-12 (plan APPROVED by owner — Phase 2 build started)
 
 ## Where the next session resumes
 
-1. Owner has not yet approved `docs/plans/phase-2-plan.md` (this is the pause point).
-2. On approval: create `feat/phase-2-schema` off `docs/phase-1-requirements-and-contract`
-   (NOT `main`, since Phase 1 was never merged to `main`), and implement per the owner
-   (re)-decisions recorded in the plan + `docs/open-decisions.md` defaults.
+1. Phases 2 and 3 are VERIFIED with open PRs (#2, #4 code; #3 docs). Owner granted blanket
+   go-ahead on 2026-10-12 for all remaining phases — plan-approval gates no longer pause the run.
+2. Next: **Phase 4** (suppliers, receipts, batches). Branch `feat/phase-4-suppliers-receipts`
+   off `feat/phase-3-materials-api`. It starts writing to the ledger (RECEIPT movements).
 3. Backend code verification flow: `composer install` → `php bin/console lint:container` →
    `doctrine:schema:validate` → migrations up/down/up on the **test** DB only →
    `php vendor/bin/phpunit --testdox` → `php vendor/bin/phpstan analyse --memory-limit=1G`.
