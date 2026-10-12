@@ -144,7 +144,7 @@ final class MaterialController extends AbstractController
             'reorder_threshold' => $m->getReorderThreshold(),
             'stocktake_threshold' => $m->getStocktakeThreshold(),
             'is_active' => $m->isActive(),
-            'created_at' => $m->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'created_at' => QueryParamsHelper::atom($m->getCreatedAt()),
         ];
     }
 }

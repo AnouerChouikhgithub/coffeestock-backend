@@ -134,7 +134,7 @@ final class InventoryService
                 'id' => $m->getId(),
                 'movement_type' => $m->getMovementType()->value,
                 'signed_quantity' => InventoryService::normalizeScale($m->getSignedQuantity()),
-                'occurred_at' => $m->getOccurredAt()->format(\DateTimeInterface::ATOM),
+                'occurred_at' => $m->getOccurredAt()->setTimezone(new \DateTimeZone('UTC'))->format(\DateTimeInterface::ATOM),
                 'source_document_type' => $m->getSourceDocumentType()->value,
                 'source_document_id' => $m->getSourceDocumentId(),
                 'created_by_user_id' => $m->getCreatedByUser()->getId(),
