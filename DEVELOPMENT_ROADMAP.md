@@ -29,7 +29,7 @@ Out of scope unless explicitly approved:
 | 1 | VERIFIED | Requirements, domain model, and API contract |
 | 2 | VERIFIED | Backend domain model and migrations |
 | 3 | VERIFIED | Materials and inventory API |
-| 4 | NOT STARTED | Suppliers, receipts, and batches |
+| 4 | VERIFIED | Suppliers, receipts, and batches |
 | 5 | NOT STARTED | Consumption, waste, adjustments, and stocktaking |
 | 6 | NOT STARTED | Frontend design system and application shell |
 | 7 | NOT STARTED | Frontend inventory workflows |
@@ -294,7 +294,7 @@ Verified evidence (phase 3):
 
 ## Phase 4: Suppliers, receipts, and batches
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - support supplier records, purchase receipts, and batch traceability
@@ -333,7 +333,16 @@ Exit criteria and definition of done:
 - stock movement history matches actual received quantities
 
 Unresolved business decisions:
-- whether batch numbers are required for all received materials
+- whether batch numbers are required for all received materials (resolved by default: OD-6 adopted; enforced via Material.batch_required, see docs/plans/phase-4-plan.md)
+
+Verified evidence (phase 4):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/6 (feat/phase-4-suppliers-receipts, base feat/phase-3-materials-api)
+- Implemented: supplier CRUD + soft deactivate; POST /api/receipts (transactional, one positive RECEIPT movement per item, batch reuse/create, OD-6 enforcement); GET /api/receipts list/read with filters; no mutation routes for receipts (REQ-032)
+- `php vendor/bin/phpunit` → OK (49 tests, 171 assertions), incl. ledger reconciliation (receipt items equal movement sums), inactive supplier/material rejections, batch-required rejections, invalid quantity variants, immutability (405 on PATCH/DELETE)
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync
+- Attribution uses a find-or-creates "system" user until Phase 9 auth (documented placeholder)
 
 ## Phase 5: Consumption, waste, adjustments, and stocktaking
 
