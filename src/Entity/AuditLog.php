@@ -44,9 +44,15 @@ class AuditLog
     #[ORM\Column(enumType: AuditOutcome::class)]
     private AuditOutcome $outcome;
 
+    /**
+     * @var array<string, mixed>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $detail = null;
 
+    /**
+     * @param array<string, mixed>|null $detail
+     */
     public function __construct(
         User $actorUser,
         AuditAction $action,
