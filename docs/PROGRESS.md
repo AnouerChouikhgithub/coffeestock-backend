@@ -14,7 +14,8 @@ Last updated: 2026-10-12
 | --- | --- | --- | --- | --- | --- |
 | 0 | VERIFIED | `main` | (pre-tracker) | DB vol survived POSTGRES_PASSWORD flip (return code 0, no data loss); 1/1 test restored+, lint+, router+ — all genuinely rerun this session | Volume kept; `.env.local` left as-is with CURRENT_PASSWORD as a temp workaround |
 | 1 | VERIFIED | `docs/phase-1-requirements-and-contract` (backend repo, 2da3442) | (pre-tracker) | All Phase 1 docs checked in (`requirements.md`, `domain-model.md`, `api-contract.md`, `open-decisions.md`, `decisions/ADR-0001-*`, plus DEVELOPMENT_ROADMAP.md edits) | Explicitly **never merged** to backend `main`; roadmap has no PR link, only generic evidence list |
-| 2 | **VERIFIED** | code: `feat/phase-2-schema` · tracker: `docs/phase-2-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 | phpunit OK (13 tests, 36 assertions); phpstan [OK] level 6; lint:container pass; schema:validate in sync; migration up/down/up OK on TEST db | OD-3/OD-6/OD-7 adopted decided-by-default per plan. Foundry + Fixtures added pre-approval. Dev db NOT migrated (owner will do it). Root report file (owner-requested) pending |
+| 2 | **VERIFIED** | code: `feat/phase-2-schema` · tracker: `docs/phase-2-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 | phpunit OK (13 tests, 36 assertions); phpstan [OK] level 6; lint:container pass; schema:validate in sync; migration up/down/up OK on TEST db | OD-3/OD-6/OD-7 adopted decided-by-default per plan. Foundry + Fixtures added pre-approval. Dev db NOT migrated (owner will do it) |
+| 3 | **VERIFIED** | code: `feat/phase-3-materials-api` · tracker: `docs/phase-3-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 | phpunit OK (31 tests, 81 assertions); phpstan [OK] level 6; lint:container pass; fresh test DB drop/create/migrate/down/up OK; schema:validate in sync | Materials CRUD + inventory/movements read API done per api-contract. Auth (401/403) deferred to Phase 9 (OD-8 unimplemented). Ledger writers start in Phase 4 |
 
 ## Env / local secrets
 
@@ -29,10 +30,10 @@ Last updated: 2026-10-12
 
 ## Where the next session resumes
 
-1. Owner has not yet approved `docs/plans/phase-2-plan.md` (this is the pause point).
-2. On approval: create `feat/phase-2-schema` off `docs/phase-1-requirements-and-contract`
-   (NOT `main`, since Phase 1 was never merged to `main`), and implement per the owner
-   (re)-decisions recorded in the plan + `docs/open-decisions.md` defaults.
+1. Phases 2 and 3 are VERIFIED with open PRs (#2, #4 code; #3 docs). Owner granted blanket
+   go-ahead on 2026-10-12 for all remaining phases — plan-approval gates no longer pause the run.
+2. Next: **Phase 4** (suppliers, receipts, batches). Branch `feat/phase-4-suppliers-receipts`
+   off `feat/phase-3-materials-api`. It starts writing to the ledger (RECEIPT movements).
 3. Backend code verification flow: `composer install` → `php bin/console lint:container` →
    `doctrine:schema:validate` → migrations up/down/up on the **test** DB only →
    `php vendor/bin/phpunit --testdox` → `php vendor/bin/phpstan analyse --memory-limit=1G`.
