@@ -10,6 +10,15 @@ use Symfony\Component\HttpFoundation\Request;
 final class QueryParamsHelper
 {
     /**
+     * Contract timestamps are UTC ISO-8601; Doctrine rehydrates DB timestamps in the
+     * PHP default timezone, so convert before formatting.
+     */
+    public static function atom(\DateTimeImmutable $dt): string
+    {
+        return $dt->setTimezone(new \DateTimeZone('UTC'))->format(\DateTimeInterface::ATOM);
+    }
+
+    /**
      * @return array{page: int, perPage: int}|JsonResponse
      */
     public static function pagination(Request $request): array|JsonResponse
