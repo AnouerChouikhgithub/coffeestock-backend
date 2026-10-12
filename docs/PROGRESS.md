@@ -6,7 +6,7 @@
 > specified. Everything else in AGENT_PROMPT.md applies unchanged.
 > **Never commit credentials** — they live only in the gitignored `LOCAL_ENV.md` (backend repo).
 
-Last updated: 2026-10-12
+Last updated: 2026-10-12 (plan APPROVED by owner — Phase 2 build started)
 
 ---
 
@@ -14,8 +14,7 @@ Last updated: 2026-10-12
 | --- | --- | --- | --- | --- | --- |
 | 0 | VERIFIED | `main` | (pre-tracker) | DB vol survived POSTGRES_PASSWORD flip (return code 0, no data loss); 1/1 test restored+, lint+, router+ — all genuinely rerun this session | Volume kept; `.env.local` left as-is with CURRENT_PASSWORD as a temp workaround |
 | 1 | VERIFIED | `docs/phase-1-requirements-and-contract` (backend repo, 2da3442) | (pre-tracker) | All Phase 1 docs checked in (`requirements.md`, `domain-model.md`, `api-contract.md`, `open-decisions.md`, `decisions/ADR-0001-*`, plus DEVELOPMENT_ROADMAP.md edits) | Explicitly **never merged** to backend `main`; roadmap has no PR link, only generic evidence list |
-| 2 | **VERIFIED** | code: `feat/phase-2-schema` · tracker: `docs/phase-2-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 | phpunit OK (13 tests, 36 assertions); phpstan [OK] level 6; lint:container pass; schema:validate in sync; migration up/down/up OK on TEST db | OD-3/OD-6/OD-7 adopted decided-by-default per plan. Foundry + Fixtures added pre-approval. Dev db NOT migrated (owner will do it) |
-| 3 | **VERIFIED** | code: `feat/phase-3-materials-api` · tracker: `docs/phase-3-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 | phpunit OK (31 tests, 81 assertions); phpstan [OK] level 6; lint:container pass; fresh test DB drop/create/migrate/down/up OK; schema:validate in sync | Materials CRUD + inventory/movements read API done per api-contract. Auth (401/403) deferred to Phase 9 (OD-8 unimplemented). Ledger writers start in Phase 4 |
+| 2 | **IN_PROGRESS** (plan approved 2026-10-12) | code: `feat/phase-2-schema` (off `docs/phase-1-requirements-and-contract`) · tracker: `docs/phase-2-status` | — | Plan approved by owner in chat. Build started | OD-3/OD-6/OD-7 adopted as decided-by-default per plan §"Adopted-by-default decisions" |
 
 ## Env / local secrets
 
