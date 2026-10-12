@@ -27,7 +27,7 @@ Out of scope unless explicitly approved:
 | --- | --- | --- |
 | 0 | VERIFIED | Development environment and repository readiness |
 | 1 | VERIFIED | Requirements, domain model, and API contract |
-| 2 | NOT STARTED | Backend domain model and migrations |
+| 2 | VERIFIED | Backend domain model and migrations |
 | 3 | NOT STARTED | Materials and inventory API |
 | 4 | NOT STARTED | Suppliers, receipts, and batches |
 | 5 | NOT STARTED | Consumption, waste, adjustments, and stocktaking |
@@ -178,7 +178,7 @@ Important review points for Phase 1:
 
 ## Phase 2: Backend domain model and database migrations
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - implement the approved domain model in Symfony
@@ -224,8 +224,17 @@ Exit criteria and definition of done:
 - backend can move to business-feature API development
 
 Unresolved business decisions:
-- which fields are immutable once recorded and which can be edited
-- approval rules for historical corrections
+- which fields are immutable once recorded and which can be edited (resolved by default: OD-7 adopted per docs/plans/phase-2-plan.md)
+- approval rules for historical corrections (resolved by default: OD-3 adopted per docs/plans/phase-2-plan.md)
+
+Verified evidence (phase 2):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 (feat/phase-2-schema, base docs/phase-1-requirements-and-contract)
+- 13 entities + 8 enums + 14 repositories + migration Version20261012002054
+- `php bin/console lint:container` → "linted successfully"
+- `php bin/console doctrine:schema:validate` → mapping OK; schema "in sync"
+- migration down/up re-executed successfully on TEST db; dev db untouched
+- `php vendor/bin/phpunit --testdox` → OK (13 tests, 36 assertions), incl. scale-3 decimal round-trips, unique constraints, not-null attribution, jsonb round-trip, and FK append-only guard on stock_movement
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
 
 ## Phase 3: Materials and inventory API
 
