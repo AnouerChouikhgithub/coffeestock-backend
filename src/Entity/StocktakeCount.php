@@ -96,4 +96,13 @@ class StocktakeCount
     {
         return $this->reconciliation_movement;
     }
+
+    /** Set exactly once, at stocktake commit (INV-10, OD-7 immutability after). */
+    public function attachReconciliationMovement(StockMovement $movement): void
+    {
+        if (null !== $this->reconciliation_movement) {
+            throw new \LogicException('Reconciliation movement already attached.');
+        }
+        $this->reconciliation_movement = $movement;
+    }
 }
