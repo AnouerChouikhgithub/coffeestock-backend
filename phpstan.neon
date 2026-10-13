@@ -10,6 +10,3 @@ parameters:
         -
             message: '#Property App\\Entity\\[\w]+::\$id \(int\|null\) is never assigned int so it can be removed from the property type#'
             path: src/Entity/*
-        -
-            message: '#Property App\\Entity\\StocktakeCount::\$reconciliation_movement \(App\\Entity\\StockMovement\|null\) is never assigned#'
-            path: src/Entity/*
