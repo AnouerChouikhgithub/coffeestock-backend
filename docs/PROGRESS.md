@@ -6,7 +6,7 @@
 > specified. Everything else in AGENT_PROMPT.md applies unchanged.
 > **Never commit credentials** — they live only in the gitignored `LOCAL_ENV.md` (backend repo).
 
-Last updated: 2026-10-13 (Phase 6 VERIFIED)
+Last updated: 2026-10-14 (Phase 7 VERIFIED)
 
 ---
 
@@ -36,15 +36,14 @@ Last updated: 2026-10-13 (Phase 6 VERIFIED)
 1. Phases 2-6 are VERIFIED. Backend PRs stacked (#2/#4/#6/#9 code; #3/#5/#7/#10 docs);
    frontend PR #1 (`feat/phase-6-shell`, base `main`). Owner granted blanket go-ahead on
    2026-10-12 for all remaining phases — plan-approval gates no longer pause the run.
-2. Next: **Phase 7** (frontend inventory workflows). Frontend branch
-   `feat/phase-7-workflows` off `feat/phase-6-shell`. Replace the PlannedPage placeholders
-   with real screens for Materials, Inventory overview, Receipts, Consumption & Waste,
-   Adjustments, Stocktaking, built against `docs/api-contract.md` and the running backend
-   (`feat/phase-5-movements`; `docker compose up -d database` + `symfony server:start` or
-   `php -S` for the API). Phase notes: include loading, empty, validation and error states
-   plus accessibility basics; amounts are scale-3 strings, never floats (no float math);
-   show each material's base unit only — no unit conversion in the UI (pre-approved decision).
-   Reuse the Phase 6 primitives (Alert, LoadingState, EmptyState) and design tokens.
+2. **Phase 7 complete.** Frontend branch `coffeestock-frontend`/`feat/phase-7-workflows` (off
+   `feat/phase-6-shell`). Replaced the PlannedPage placeholders with real screens for Materials,
+   Inventory overview, Receipts, Consumption & Waste, Adjustments, Stocktaking, built against
+   `docs/api-contract.md` and the running backend (`feat/phase-5-movements`). Verified:
+   `npm run lint OK`, `npm run type-check OK`, `npm run test OK (27/27)`, `npm run build OK`.
+   Live integration smoke-passed against the Phase 5 API (material → supplier → receipt with
+   batch → consumption → waste → adjustment → stocktake draft → commit → inventory). Next:
+   Phase 8.
 3. Backend code verification flow (unchanged): `composer install` → `php bin/console lint:container` →
    `doctrine:schema:validate` → migrations up/down/up on the **test** DB only →
    `php vendor/bin/phpunit --testdox` → `php vendor/bin/phpstan analyse --memory-limit=1G`.

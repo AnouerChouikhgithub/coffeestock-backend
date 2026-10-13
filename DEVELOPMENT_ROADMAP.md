@@ -455,7 +455,7 @@ Verified evidence (phase 6):
 
 ## Phase 7: Frontend inventory workflows
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - create UI for materials, inventory overview, batches, and operational stock flows
@@ -498,6 +498,31 @@ Exit criteria and definition of done:
 
 Unresolved business decisions:
 - whether the UI should show raw stock values or normalized units in a single presentation model
+  (resolved by default: show each material's base-unit raw stock value, no UI unit conversion —
+  pre-approved decision, same as Phase 6).
+
+Verified evidence (phase 7):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-frontend/pull/2 (feat/phase-7-workflows,
+  base feat/phase-6-shell)
+- Implemented: MaterialsPage, InventoryPage, ReceiptsPage, ConsumptionPage, AdjustmentsPage,
+  StocktakingPage + per-page test suites (MaterialsPage.test, InventoryPage.test, ReceiptsPage.test,
+  ConsumptionPage.test, AdjustmentsPage.test, StocktakingPage.test); shared picker helpers
+  MaterialSelect; services materials/receipts/usage/adjustments/stocktakes/suppliers/inventory.
+- `npm run lint` → OK (0 warnings, --max-warnings 0)
+- `npm run type-check` → OK
+- `npm run test` → OK (27 tests, 7 test files): route rendering, loading/empty/error states, field
+  errors from backend error codes, the OD-1 negative-stock explanation, waste reason requirement,
+  stocktake approval-comment flow before commit, material/base-unit-as-string assertions.
+- `npm run build` → OK (tsc -b && vite build; dist/assets/index-*.css + index-*.js)
+- Live integration: frontend dev server (Vite, http://localhost:5173) ran against a Phase 5 API
+  worktree (`../coffeestock-backend-phase5` off `feat/phase-5-movements`); smoke path verified in
+  browser: materials list, inventory showing Espresso beans 595.000 g with Movements drill-down,
+  receipts list + create form (supplier, date, per-item material/quantity/batch), consumption/waste,
+  adjustments, and stocktaking create-commit. Console free of app errors; all XHR returns 200.
+- Notes / assumptions: RAW-receipt batch required by backend (OD-6) surfaced as a per-row batch field
+  with the exact `items.N.batch.batch_number` error key; backend rejects future delivery dates and
+  negative-stock writes, and the UI mirrors those codes (VALIDATION_FAILED, NEGATIVE_STOCK_BLOCKED,
+  APPROVAL_REQUIRED). Auth (401/403) and the Phase 7 plan doc are deferred; no new backend code.
 
 ## Phase 8: Dashboard, reports, and CSV export
 
