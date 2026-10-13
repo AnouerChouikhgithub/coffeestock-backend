@@ -3,3 +3,10 @@ parameters:
     paths:
         - src
         - tests
+    ignoreErrors:
+        # Doctrine ORM hydrates/assigns ORM identifier and inverse-side properties via
+        # reflection (UnitOfWork#createEntity), which PHPStan cannot see; the property
+        # types are correct and required by the ORM mapping.
+        -
+            message: '#Property App\\Entity\\[\w]+::\$id \(int\|null\) is never assigned int so it can be removed from the property type#'
+            path: src/Entity/*
