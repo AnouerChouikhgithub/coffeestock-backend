@@ -30,7 +30,7 @@ Out of scope unless explicitly approved:
 | 2 | VERIFIED | Backend domain model and migrations |
 | 3 | VERIFIED | Materials and inventory API |
 | 4 | VERIFIED | Suppliers, receipts, and batches |
-| 5 | NOT STARTED | Consumption, waste, adjustments, and stocktaking |
+| 5 | VERIFIED | Consumption, waste, adjustments, and stocktaking |
 | 6 | NOT STARTED | Frontend design system and application shell |
 | 7 | NOT STARTED | Frontend inventory workflows |
 | 8 | NOT STARTED | Dashboard, reports, and CSV export |
@@ -388,8 +388,18 @@ Exit criteria and definition of done:
 - stocktaking and variance processes are reproducible and auditable
 
 Unresolved business decisions:
-- approval workflow for stock adjustments and stocktake variance approvals
-- difference threshold and tolerance for physical counts
+- approval workflow for stock adjustments and stocktake variance approvals (resolved by default: OD-1 zero-floor with an explicit `approved` flag; role enforcement deferred to Phase 9, see docs/plans/phase-5-plan.md)
+- difference threshold and tolerance for physical counts (resolved by default: OD-5 adopted; per-material `stocktake_threshold` else 2% of the snapshot derived stock)
+
+Verified evidence (phase 5):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/9 (feat/phase-5-movements, base feat/phase-4-suppliers-receipts)
+- Implemented: POST /api/consumptions and POST /api/wastes (each one negative CONSUMPTION/WASTE ledger movement, REQ-040/041, waste requires a reason note BR-15); POST /api/adjustments (signed delta, mandatory reason, REQ-050/BR-17, OD-1 zero-floor + OD-5 threshold approval); POST/GET /api/stocktakes and POST /api/stocktakes/{id}/commit (draft snapshots derived stock, commit posts STOCKTAKE_DELTA atomically per INV-10)
+- Concurrency: `StockGuard` takes a `SELECT ... FOR UPDATE` per-material row lock inside the write transaction so two simultaneous writes cannot both read the same pre-write balance and overdraw (covered by `StockConcurrencyTest`)
+- `php vendor/bin/phpunit` → OK (74 tests, 319 assertions), incl. ledger reconciliation, OD-1 zero-floor rejections, waste-vs-consumption type separation, stocktake delta/commit flows, and the concurrency lock test
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync (Phase 5 needs no new migration)
+- Attribution uses a find-or-creates "system" user until Phase 9 auth (documented placeholder)
 
 ## Phase 6: Frontend design system and application shell
 
