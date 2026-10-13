@@ -27,10 +27,10 @@ Out of scope unless explicitly approved:
 | --- | --- | --- |
 | 0 | VERIFIED | Development environment and repository readiness |
 | 1 | VERIFIED | Requirements, domain model, and API contract |
-| 2 | NOT STARTED | Backend domain model and migrations |
-| 3 | NOT STARTED | Materials and inventory API |
-| 4 | NOT STARTED | Suppliers, receipts, and batches |
-| 5 | NOT STARTED | Consumption, waste, adjustments, and stocktaking |
+| 2 | VERIFIED | Backend domain model and migrations |
+| 3 | VERIFIED | Materials and inventory API |
+| 4 | VERIFIED | Suppliers, receipts, and batches |
+| 5 | VERIFIED | Consumption, waste, adjustments, and stocktaking |
 | 6 | NOT STARTED | Frontend design system and application shell |
 | 7 | NOT STARTED | Frontend inventory workflows |
 | 8 | NOT STARTED | Dashboard, reports, and CSV export |
@@ -178,7 +178,7 @@ Important review points for Phase 1:
 
 ## Phase 2: Backend domain model and database migrations
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - implement the approved domain model in Symfony
@@ -224,12 +224,21 @@ Exit criteria and definition of done:
 - backend can move to business-feature API development
 
 Unresolved business decisions:
-- which fields are immutable once recorded and which can be edited
-- approval rules for historical corrections
+- which fields are immutable once recorded and which can be edited (resolved by default: OD-7 adopted per docs/plans/phase-2-plan.md)
+- approval rules for historical corrections (resolved by default: OD-3 adopted per docs/plans/phase-2-plan.md)
+
+Verified evidence (phase 2):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 (feat/phase-2-schema, base docs/phase-1-requirements-and-contract)
+- 13 entities + 8 enums + 14 repositories + migration Version20261012002054
+- `php bin/console lint:container` → "linted successfully"
+- `php bin/console doctrine:schema:validate` → mapping OK; schema "in sync"
+- migration down/up re-executed successfully on TEST db; dev db untouched
+- `php vendor/bin/phpunit --testdox` → OK (13 tests, 36 assertions), incl. scale-3 decimal round-trips, unique constraints, not-null attribution, jsonb round-trip, and FK append-only guard on stock_movement
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
 
 ## Phase 3: Materials and inventory API
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - expose APIs for materials and inventory quantity management
@@ -274,9 +283,18 @@ Exit criteria and definition of done:
 Unresolved business decisions:
 - whether some inventory-level rounding can occur at creation time or only at reporting time
 
+Verified evidence (phase 3):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 (feat/phase-3-materials-api, base feat/phase-2-schema)
+- Implemented: GET /api/units; POST/GET/PATCH /api/materials (filters, pagination, contract error codes incl. DUPLICATE_NAME, base_unit immutability 422); GET /api/inventory, /api/inventory/{id}, /api/inventory/{id}/movements (ledger-derived stock per INV-3, below-threshold flag, movement_type/date filters)
+- `php vendor/bin/phpunit` → OK (31 tests, 81 assertions), incl. exact ledger-sum reconciliation ("7.625"), scale-3 validation, duplicate-name and invalid-unit rejections, newest-first history, 404/422/400 error paths
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync
+- Auth (401/403) deliberately deferred to Phase 9 (OD-8); recorded in docs/plans/phase-3-plan.md
+
 ## Phase 4: Suppliers, receipts, and batches
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - support supplier records, purchase receipts, and batch traceability
@@ -315,7 +333,16 @@ Exit criteria and definition of done:
 - stock movement history matches actual received quantities
 
 Unresolved business decisions:
-- whether batch numbers are required for all received materials
+- whether batch numbers are required for all received materials (resolved by default: OD-6 adopted; enforced via Material.batch_required, see docs/plans/phase-4-plan.md)
+
+Verified evidence (phase 4):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/6 (feat/phase-4-suppliers-receipts, base feat/phase-3-materials-api)
+- Implemented: supplier CRUD + soft deactivate; POST /api/receipts (transactional, one positive RECEIPT movement per item, batch reuse/create, OD-6 enforcement); GET /api/receipts list/read with filters; no mutation routes for receipts (REQ-032)
+- `php vendor/bin/phpunit` → OK (49 tests, 171 assertions), incl. ledger reconciliation (receipt items equal movement sums), inactive supplier/material rejections, batch-required rejections, invalid quantity variants, immutability (405 on PATCH/DELETE)
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync
+- Attribution uses a find-or-creates "system" user until Phase 9 auth (documented placeholder)
 
 ## Phase 5: Consumption, waste, adjustments, and stocktaking
 
@@ -361,8 +388,18 @@ Exit criteria and definition of done:
 - stocktaking and variance processes are reproducible and auditable
 
 Unresolved business decisions:
-- approval workflow for stock adjustments and stocktake variance approvals
-- difference threshold and tolerance for physical counts
+- approval workflow for stock adjustments and stocktake variance approvals (resolved by default: OD-1 zero-floor with an explicit `approved` flag; role enforcement deferred to Phase 9, see docs/plans/phase-5-plan.md)
+- difference threshold and tolerance for physical counts (resolved by default: OD-5 adopted; per-material `stocktake_threshold` else 2% of the snapshot derived stock)
+
+Verified evidence (phase 5):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/9 (feat/phase-5-movements, base feat/phase-4-suppliers-receipts)
+- Implemented: POST /api/consumptions and POST /api/wastes (each one negative CONSUMPTION/WASTE ledger movement, REQ-040/041, waste requires a reason note BR-15); POST /api/adjustments (signed delta, mandatory reason, REQ-050/BR-17, OD-1 zero-floor + OD-5 threshold approval); POST/GET /api/stocktakes and POST /api/stocktakes/{id}/commit (draft snapshots derived stock, commit posts STOCKTAKE_DELTA atomically per INV-10)
+- Concurrency: `StockGuard` takes a `SELECT ... FOR UPDATE` per-material row lock inside the write transaction so two simultaneous writes cannot both read the same pre-write balance and overdraw (covered by `StockConcurrencyTest`)
+- `php vendor/bin/phpunit` → OK (74 tests, 319 assertions), incl. ledger reconciliation, OD-1 zero-floor rejections, waste-vs-consumption type separation, stocktake delta/commit flows, and the concurrency lock test
+- `php vendor/bin/phpstan analyse --memory-limit=1G` → [OK] No errors (level 6)
+- `php bin/console lint:container` → linted successfully
+- Fresh test DB: drop → create → migrate → down → up all [OK]; `doctrine:schema:validate` → in sync (Phase 5 needs no new migration)
+- Attribution uses a find-or-creates "system" user until Phase 9 auth (documented placeholder)
 
 ## Phase 6: Frontend design system and application shell
 

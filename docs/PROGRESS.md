@@ -6,7 +6,7 @@
 > specified. Everything else in AGENT_PROMPT.md applies unchanged.
 > **Never commit credentials** — they live only in the gitignored `LOCAL_ENV.md` (backend repo).
 
-Last updated: 2026-10-12 (plan APPROVED by owner — Phase 2 build started)
+Last updated: 2026-10-13 (Phase 5 VERIFIED)
 
 ---
 
@@ -14,7 +14,10 @@ Last updated: 2026-10-12 (plan APPROVED by owner — Phase 2 build started)
 | --- | --- | --- | --- | --- | --- |
 | 0 | VERIFIED | `main` | (pre-tracker) | DB vol survived POSTGRES_PASSWORD flip (return code 0, no data loss); 1/1 test restored+, lint+, router+ — all genuinely rerun this session | Volume kept; `.env.local` left as-is with CURRENT_PASSWORD as a temp workaround |
 | 1 | VERIFIED | `docs/phase-1-requirements-and-contract` (backend repo, 2da3442) | (pre-tracker) | All Phase 1 docs checked in (`requirements.md`, `domain-model.md`, `api-contract.md`, `open-decisions.md`, `decisions/ADR-0001-*`, plus DEVELOPMENT_ROADMAP.md edits) | Explicitly **never merged** to backend `main`; roadmap has no PR link, only generic evidence list |
-| 2 | **IN_PROGRESS** (plan approved 2026-10-12) | code: `feat/phase-2-schema` (off `docs/phase-1-requirements-and-contract`) · tracker: `docs/phase-2-status` | — | Plan approved by owner in chat. Build started | OD-3/OD-6/OD-7 adopted as decided-by-default per plan §"Adopted-by-default decisions" |
+| 2 | **VERIFIED** | code: `feat/phase-2-schema` · tracker: `docs/phase-2-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/2 | phpunit OK (13 tests, 36 assertions); phpstan [OK] level 6; lint:container pass; schema:validate in sync; migration up/down/up OK on TEST db | OD-3/OD-6/OD-7 adopted decided-by-default per plan. Foundry + Fixtures added pre-approval. Dev db NOT migrated (owner will do it) |
+| 3 | **VERIFIED** | code: `feat/phase-3-materials-api` · tracker: `docs/phase-3-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 | phpunit OK (31 tests, 81 assertions); phpstan [OK] level 6; lint:container pass; fresh test DB drop/create/migrate/down/up OK; schema:validate in sync | Materials CRUD + inventory/movements read API done per api-contract. Auth (401/403) deferred to Phase 9 (OD-8 unimplemented) |
+| 4 | **VERIFIED** | code: `feat/phase-4-suppliers-receipts` · tracker: `docs/phase-4-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/6 | phpunit OK (49 tests, 171 assertions); phpstan [OK] level 6; lint pass; fresh test-DB migration rehearsal OK; schema:validate in sync | Suppliers CRUD + receipts API; first ledger WRITES (RECEIPT movements, transactional). OD-6 enforced via batch_required. Attribution = find-or-create 'system' user until Phase 9 |
+| 5 | **VERIFIED** | code: `feat/phase-5-movements` · tracker: `docs/phase-5-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/9 | phpunit OK (74 tests, 319 assertions); phpstan [OK] level 6; lint:container pass; fresh test-DB drop/create/migrate/down/up OK; schema:validate in sync (no new migration) | Consumption/waste/adjustments/stocktake write paths per api-contract (endpoints 16-21). OD-1 zero-floor with explicit `approved` flag; OD-5 per-material stocktake_threshold else 2% default. Per-material `SELECT ... FOR UPDATE` lock prevents concurrent overdraw (StockConcurrencyTest). Approver role enforcement deferred to Phase 9 |
 
 ## Env / local secrets
 
@@ -29,11 +32,18 @@ Last updated: 2026-10-12 (plan APPROVED by owner — Phase 2 build started)
 
 ## Where the next session resumes
 
-1. Owner has not yet approved `docs/plans/phase-2-plan.md` (this is the pause point).
-2. On approval: create `feat/phase-2-schema` off `docs/phase-1-requirements-and-contract`
-   (NOT `main`, since Phase 1 was never merged to `main`), and implement per the owner
-   (re)-decisions recorded in the plan + `docs/open-decisions.md` defaults.
-3. Backend code verification flow: `composer install` → `php bin/console lint:container` →
+1. Phases 2-5 are VERIFIED with open stacked PRs (#2/#4/#6/#9 code; #3/#5/#7 docs; #9 base is
+   `feat/phase-4-suppliers-receipts`). Owner granted blanket go-ahead on 2026-10-12 for all
+   remaining phases — plan-approval gates no longer pause the run.
+2. Next: **Phase 6** (frontend design system + application shell). Frontend repo
+   `coffeestock-frontend` is untouched beyond its scaffold (only `main`). Build against
+   `docs/api-contract.md` and the running backend from the latest backend branch
+   (`feat/phase-5-movements`), falling back to fixtures when it is not running. Per AGENT_PROMPT
+   phase notes: dashboard-first navigation with a left sidebar (Materials, Receipts, Consumption
+   and Waste, Adjustments, Stocktaking, Reports); include loading, empty, validation and error
+   states plus accessibility basics; amounts are scale-3 strings, never floats.
+3. Backend code verification flow (unchanged): `composer install` → `php bin/console lint:container` →
    `doctrine:schema:validate` → migrations up/down/up on the **test** DB only →
    `php vendor/bin/phpunit --testdox` → `php vendor/bin/phpstan analyse --memory-limit=1G`.
+   Frontend flow: `npm run lint` → `npm run type-check` → `npm run test` → `npm run build`.
 4. After verification, roadmap status flip to VERIFIED + a PR, per AGENT_PROMPT.md step 6.
