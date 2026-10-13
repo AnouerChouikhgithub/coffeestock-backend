@@ -31,7 +31,7 @@ Out of scope unless explicitly approved:
 | 3 | VERIFIED | Materials and inventory API |
 | 4 | VERIFIED | Suppliers, receipts, and batches |
 | 5 | VERIFIED | Consumption, waste, adjustments, and stocktaking |
-| 6 | NOT STARTED | Frontend design system and application shell |
+| 6 | VERIFIED | Frontend design system and application shell |
 | 7 | NOT STARTED | Frontend inventory workflows |
 | 8 | NOT STARTED | Dashboard, reports, and CSV export |
 | 9 | NOT STARTED | Authentication, authorization, audit, and security hardening |
@@ -403,7 +403,7 @@ Verified evidence (phase 5):
 
 ## Phase 6: Frontend design system and application shell
 
-Status: NOT STARTED
+Status: VERIFIED
 
 Goal and scope:
 - establish the app shell, design system, layout patterns, and shared UI primitives
@@ -443,7 +443,15 @@ Exit criteria and definition of done:
 - shell and design system are ready to host inventory workflows
 
 Unresolved business decisions:
-- whether the app uses a single dashboard-first navigation model or multiple operational sections
+- whether the app uses a single dashboard-first navigation model or multiple operational sections (resolved by default: single dashboard-first model with one left sidebar — Materials, Receipts, Consumption & Waste, Adjustments, Stocktaking, Reports)
+
+Verified evidence (phase 6):
+- PR: https://github.com/AnouerChouikhgithub/coffeestock-frontend/pull/1 (feat/phase-6-shell, base main)
+- Implemented: design tokens (src/styles/tokens.css); AppShell with dashboard-first left sidebar, header, main region, skip link and banner/navigation/main landmarks, aria-current on the active NavLink; DashboardPage with a live /api/health check (loading / error / retry states); PlannedPage placeholder for the Phase 7 sections; shared primitives Alert (role=alert for errors), LoadingState (role=status), EmptyState; route table in src/app/App.tsx with BrowserRouter in main.tsx; responsive sidebar collapse under 48rem; prefers-reduced-motion honored.
+- `npm run type-check` → OK
+- `npm run lint` → OK (0 warnings, --max-warnings 0)
+- `npm run test` → OK (6/6): route rendering, landmarks, skip link, active-link aria-current, planned-section placeholder, backend-unavailable error state + retry
+- `npm run build` → OK (tsc -b && vite build)
 
 ## Phase 7: Frontend inventory workflows
 

@@ -6,7 +6,7 @@
 > specified. Everything else in AGENT_PROMPT.md applies unchanged.
 > **Never commit credentials** — they live only in the gitignored `LOCAL_ENV.md` (backend repo).
 
-Last updated: 2026-10-13 (Phase 5 VERIFIED)
+Last updated: 2026-10-13 (Phase 6 VERIFIED)
 
 ---
 
@@ -18,6 +18,7 @@ Last updated: 2026-10-13 (Phase 5 VERIFIED)
 | 3 | **VERIFIED** | code: `feat/phase-3-materials-api` · tracker: `docs/phase-3-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/4 | phpunit OK (31 tests, 81 assertions); phpstan [OK] level 6; lint:container pass; fresh test DB drop/create/migrate/down/up OK; schema:validate in sync | Materials CRUD + inventory/movements read API done per api-contract. Auth (401/403) deferred to Phase 9 (OD-8 unimplemented) |
 | 4 | **VERIFIED** | code: `feat/phase-4-suppliers-receipts` · tracker: `docs/phase-4-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/6 | phpunit OK (49 tests, 171 assertions); phpstan [OK] level 6; lint pass; fresh test-DB migration rehearsal OK; schema:validate in sync | Suppliers CRUD + receipts API; first ledger WRITES (RECEIPT movements, transactional). OD-6 enforced via batch_required. Attribution = find-or-create 'system' user until Phase 9 |
 | 5 | **VERIFIED** | code: `feat/phase-5-movements` · tracker: `docs/phase-5-status` | https://github.com/AnouerChouikhgithub/coffeestock-backend/pull/9 | phpunit OK (74 tests, 319 assertions); phpstan [OK] level 6; lint:container pass; fresh test-DB drop/create/migrate/down/up OK; schema:validate in sync (no new migration) | Consumption/waste/adjustments/stocktake write paths per api-contract (endpoints 16-21). OD-1 zero-floor with explicit `approved` flag; OD-5 per-material stocktake_threshold else 2% default. Per-material `SELECT ... FOR UPDATE` lock prevents concurrent overdraw (StockConcurrencyTest). Approver role enforcement deferred to Phase 9 |
+| 6 | **VERIFIED** | code: `coffeestock-frontend` `feat/phase-6-shell` · tracker: `docs/phase-6-status` | https://github.com/AnouerChouikhgithub/coffeestock-frontend/pull/1 | npm type-check OK; lint OK (0 warnings); test OK (6/6); build OK | Frontend app shell + design system: tokens, AppShell (dashboard-first left sidebar per pre-approved decision), DashboardPage with live /api/health check, Alert/LoadingState/EmptyState primitives, router + landmarks + skip link + responsive collapse. Nav-model decision (single dashboard-first sidebar) adopted by default |
 
 ## Env / local secrets
 
@@ -32,18 +33,22 @@ Last updated: 2026-10-13 (Phase 5 VERIFIED)
 
 ## Where the next session resumes
 
-1. Phases 2-5 are VERIFIED with open stacked PRs (#2/#4/#6/#9 code; #3/#5/#7 docs; #9 base is
-   `feat/phase-4-suppliers-receipts`). Owner granted blanket go-ahead on 2026-10-12 for all
-   remaining phases — plan-approval gates no longer pause the run.
-2. Next: **Phase 6** (frontend design system + application shell). Frontend repo
-   `coffeestock-frontend` is untouched beyond its scaffold (only `main`). Build against
-   `docs/api-contract.md` and the running backend from the latest backend branch
-   (`feat/phase-5-movements`), falling back to fixtures when it is not running. Per AGENT_PROMPT
-   phase notes: dashboard-first navigation with a left sidebar (Materials, Receipts, Consumption
-   and Waste, Adjustments, Stocktaking, Reports); include loading, empty, validation and error
-   states plus accessibility basics; amounts are scale-3 strings, never floats.
+1. Phases 2-6 are VERIFIED. Backend PRs stacked (#2/#4/#6/#9 code; #3/#5/#7/#10 docs);
+   frontend PR #1 (`feat/phase-6-shell`, base `main`). Owner granted blanket go-ahead on
+   2026-10-12 for all remaining phases — plan-approval gates no longer pause the run.
+2. Next: **Phase 7** (frontend inventory workflows). Frontend branch
+   `feat/phase-7-workflows` off `feat/phase-6-shell`. Replace the PlannedPage placeholders
+   with real screens for Materials, Inventory overview, Receipts, Consumption & Waste,
+   Adjustments, Stocktaking, built against `docs/api-contract.md` and the running backend
+   (`feat/phase-5-movements`; `docker compose up -d database` + `symfony server:start` or
+   `php -S` for the API). Phase notes: include loading, empty, validation and error states
+   plus accessibility basics; amounts are scale-3 strings, never floats (no float math);
+   show each material's base unit only — no unit conversion in the UI (pre-approved decision).
+   Reuse the Phase 6 primitives (Alert, LoadingState, EmptyState) and design tokens.
 3. Backend code verification flow (unchanged): `composer install` → `php bin/console lint:container` →
    `doctrine:schema:validate` → migrations up/down/up on the **test** DB only →
    `php vendor/bin/phpunit --testdox` → `php vendor/bin/phpstan analyse --memory-limit=1G`.
    Frontend flow: `npm run lint` → `npm run type-check` → `npm run test` → `npm run build`.
 4. After verification, roadmap status flip to VERIFIED + a PR, per AGENT_PROMPT.md step 6.
+5. Phase 8 will need backend report + CSV endpoints (check the contract; implement any missing
+   ones on `feat/phase-8-reports-api` with its own PR, then the frontend separately).
