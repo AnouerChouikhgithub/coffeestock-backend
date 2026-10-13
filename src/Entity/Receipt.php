@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\ReceiptRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -41,15 +43,25 @@ class Receipt
     private \DateTimeImmutable $created_at;
 
     /**
+     * Mapped inverse side of ReceiptItem#receipt: hydration in a fresh kernel must
+     * lazy-load the items (an unmapped PHP array would silently read as empty).
+     *
+     * @var Collection<int, ReceiptItem>
+     */
+    #[ORM\OneToMany(targetEntity: ReceiptItem::class, mappedBy: 'receipt')]
+    private Collection $items;
+
+    /**
      * @param list<ReceiptItem> $items
      */
-    public function __construct(Supplier $supplier, \DateTimeImmutable $deliveryDate, User $createdByUser, ?string $note = null, private array $items = [])
+    public function __construct(Supplier $supplier, \DateTimeImmutable $deliveryDate, User $createdByUser, ?string $note = null, array $items = [])
     {
         $this->supplier = $supplier;
         $this->delivery_date = $deliveryDate;
         $this->created_by_user = $createdByUser;
         $this->note = $note;
         $this->created_at = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $this->items = new ArrayCollection($items);
     }
 
     public function getId(): ?int
@@ -85,6 +97,15 @@ class Receipt
     /** @return list<ReceiptItem> */
     public function getItems(): array
     {
-        return $this->items;
+        return $this->items->toArray();
+    }
+
+    /**
+     * Used only while composing the receipt inside its creation transaction — the
+     * header and its items are immutable once that transaction commits (REQ-032).
+     */
+    public function attachItem(ReceiptItem $item): void
+    {
+        $this->items->add($item);
     }
 }
