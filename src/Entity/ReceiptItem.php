@@ -20,7 +20,7 @@ class ReceiptItem
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Receipt::class)]
+    #[ORM\ManyToOne(targetEntity: Receipt::class, inversedBy: 'items')]
     #[ORM\JoinColumn(name: 'receipt_id', nullable: false)]
     private Receipt $receipt;
 
