@@ -35,7 +35,7 @@ class StockMovementRepository extends ServiceEntityRepository
 
         if (null !== $asOf) {
             $qb
-                ->andWhere('m.occurredAt <= :asOf')
+                ->andWhere('m.occurred_at <= :asOf')
                 ->setParameter('asOf', $asOf);
         }
 

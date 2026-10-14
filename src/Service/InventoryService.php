@@ -25,9 +25,9 @@ final class InventoryService
     /**
      * @return array{material_id: int|null, name: string, base_unit: string, stock_on_hand: string, below_threshold: bool}
      */
-    public function stockFor(Material $material): array
+    public function stockFor(Material $material, ?\DateTimeImmutable $asOf = null): array
     {
-        $stock = $this->movements->getStockOnHand($material->getId() ?? 0);
+        $stock = $this->movements->getStockOnHand($material->getId() ?? 0, $asOf);
         $threshold = $material->getReorderThreshold();
 
         return [
