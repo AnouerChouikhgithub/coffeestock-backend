@@ -46,6 +46,8 @@ jobs:
           cat > .env <<'ENV'
           APP_ENV=dev
           APP_SECRET=ci-placeholder-not-a-secret
+          APP_SHARE_DIR=var/share
+          DEFAULT_URI=http://localhost:8000
           DATABASE_URL="postgresql://coffeestock:coffeestock@127.0.0.1:5432/coffeestock_test?serverVersion=16&charset=utf8"
           MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
           MAILER_DSN=null://null
@@ -54,6 +56,8 @@ jobs:
           cat > .env.test <<'ENV'
           APP_ENV=test
           APP_SECRET=ci-placeholder-not-a-secret
+          APP_SHARE_DIR=var/share
+          DEFAULT_URI=http://localhost:8000
           DATABASE_URL="postgresql://coffeestock:coffeestock@127.0.0.1:5432/coffeestock_test?serverVersion=16&charset=utf8"
           MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
           MAILER_DSN=null://null
