@@ -19,6 +19,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class InventoryApiTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?User $user = null;
 
@@ -28,9 +29,13 @@ final class InventoryApiTest extends WebTestCase
      * Ensures the test kernel boots through createClient exactly once per test,
      * before any other kernel-booting access (e.g. the entity manager).
      */
+    /**
+     * Ensures the test kernel boots exactly once per test, before any other
+     * kernel-booting access (e.g. the entity manager). Authenticated per Phase 9.
+     */
     private function client(): \Symfony\Bundle\FrameworkBundle\KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        return $this->cachedClient ??= $this->authClient();
     }
 
     private function em(): EntityManagerInterface

@@ -22,6 +22,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class ReportApiTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?User $user = null;
 
@@ -29,7 +30,7 @@ final class ReportApiTest extends WebTestCase
 
     private function client(): \Symfony\Bundle\FrameworkBundle\KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        return $this->cachedClient ??= $this->authClient();
     }
 
     private function em(): EntityManagerInterface
