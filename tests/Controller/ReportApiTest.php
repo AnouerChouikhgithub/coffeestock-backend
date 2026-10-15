@@ -211,6 +211,55 @@ final class ReportApiTest extends WebTestCase
         self::assertSame('application/json', $client->getResponse()->headers->get('Content-Type'));
     }
 
+    public function testInventoryCsvNeutralisesSpreadsheetFormulas(): void
+    {
+        // Material names are free user input and land in the export verbatim, so a
+        // name beginning with a formula trigger would execute on any workstation
+        // that opens the file in Excel/Sheets/LibreOffice.
+        foreach ([
+            '=HYPERLINK("http://evil.example","click")',
+            '+SUM(1,1)',
+            '@cmd',
+            '-2+3',
+        ] as $payload) {
+            $this->em()->persist(new Material($payload, MaterialType::RAW, BaseUnit::GRAM));
+        }
+        $this->em()->flush();
+
+        $client = $this->client();
+        $client->request('GET', '/api/reports/inventory/export.csv');
+        self::assertResponseIsSuccessful();
+
+        $csv = (string) $client->getResponse()->getContent();
+
+        // Each payload is neutralised into literal text...
+        self::assertStringContainsString("'=HYPERLINK", $csv);
+        self::assertStringContainsString("'+SUM(1,1)", $csv);
+        self::assertStringContainsString("'@cmd", $csv);
+        self::assertStringContainsString("'-2+3", $csv);
+
+        // ...and no field in the whole export starts with a live formula trigger.
+        self::assertDoesNotMatchRegularExpression('/(^|,)[=+@]/m', $csv);
+    }
+
+    public function testMovementsCsvLeavesNegativeLedgerTotalsMachineReadable(): void
+    {
+        // Guard against over-neutralising: real negative quantities must stay
+        // parseable numbers rather than being quoted into text.
+        $beans = new Material('Beans', MaterialType::RAW, BaseUnit::GRAM);
+        $this->em()->persist($beans);
+        $this->seedMovement($beans, '-2.750', MovementType::CONSUMPTION, '2026-10-02T08:00:00Z');
+        $this->em()->flush();
+
+        $client = $this->client();
+        $client->request('GET', '/api/reports/movements/export.csv');
+        self::assertResponseIsSuccessful();
+
+        $csv = (string) $client->getResponse()->getContent();
+        self::assertMatchesRegularExpression('/,CONSUMPTION,-2\.750,1\n$/', $csv);
+        self::assertStringNotContainsString("'-2.750", $csv);
+    }
+
     // -------------------------------------------------------------------------
     // 29. GET /api/audit-logs
     // -------------------------------------------------------------------------

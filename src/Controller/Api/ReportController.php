@@ -402,8 +402,29 @@ final class ReportController extends AbstractController
         return $value instanceof \BackedEnum ? $value->value : (string) $value;
     }
 
+    /**
+     * RFC 4180 quoting plus spreadsheet formula-injection neutralisation.
+     *
+     * Excel, Sheets and LibreOffice evaluate a cell that starts with `=`, `+`, `-`
+     * or `@`, and a leading TAB or CR can be used to smuggle a formula past naive
+     * checks. Material names reach this export from user input, so an unescaped
+     * value is a formula-injection vector on any workstation that opens the file.
+     *
+     * Cells that are well-formed numbers are deliberately left untouched: they
+     * cannot be formulas, and prefixing them would corrupt the negative ledger
+     * totals this report emits and break machine consumers of the export.
+     */
     private static function csvEscape(string $value): string
     {
+        if ('' !== $value
+            && 0 === \preg_match('/^-?\d+(?:\.\d+)?$/', $value)
+            && false !== \strpos("=+-@\t\r", $value[0])
+        ) {
+            // Prefixing with an apostrophe makes the spreadsheet treat the cell as
+            // literal text instead of executing it.
+            $value = "'".$value;
+        }
+
         if (false !== \strpos($value, ',') || false !== \strpos($value, '"') || false !== \strpos($value, "\n") || false !== \strpos($value, "\r")) {
             return '"'.\str_replace('"', '""', $value).'"';
         }
