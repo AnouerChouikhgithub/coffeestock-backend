@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Entity;
 
+use App\Entity\Material;
 use App\Enum\BaseUnit;
 use App\Enum\MaterialType;
-use App\Entity\Material;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Zenstruck\Foundry\Test\ResetDatabase;

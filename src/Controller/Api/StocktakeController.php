@@ -127,7 +127,7 @@ final class StocktakeController extends AbstractController
 
         return [
             'id' => $stocktake->getId(),
-            'status' => $stocktake->getStatus() === StocktakeStatus::COMMITTED ? 'COMMITTED' : 'DRAFT',
+            'status' => StocktakeStatus::COMMITTED === $stocktake->getStatus() ? 'COMMITTED' : 'DRAFT',
             'taken_at' => QueryParamsHelper::atom($stocktake->getTakenAt()),
             'created_by_user_id' => $stocktake->getCreatedByUser()->getId(),
             'committed_by_user_id' => $stocktake->getCommittedByUser()?->getId(),

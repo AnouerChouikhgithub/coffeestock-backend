@@ -31,14 +31,59 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_pgsql, pgsql, mbstring, xml
+          extensions: pdo_pgsql, pgsql, mbstring, xml, intl
           coverage: none
+
+      # `.env` is deliberately not committed (it carries local credentials), so a
+      # fresh checkout has no environment file at all. Composer's post-install
+      # `cache:clear` boots the kernel, which reads DATABASE_URL from `.env`, and
+      # fails with "Unable to read the .env environment file" — that is why every
+      # previous run of this workflow failed after ~40 seconds, before any check
+      # could run. `.env.test` is written here too so the suite runs against the
+      # same configuration locally and in CI.
+      - name: Provide environment files
+        run: |
+          cat > .env <<'ENV'
+          APP_ENV=dev
+          APP_SECRET=ci-placeholder-not-a-secret
+          APP_SHARE_DIR=var/share
+          DEFAULT_URI=http://localhost:8000
+          DATABASE_URL="postgresql://coffeestock:coffeestock@127.0.0.1:5432/coffeestock_test?serverVersion=16&charset=utf8"
+          MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
+          MAILER_DSN=null://null
+          CORS_ALLOW_ORIGIN=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+          ENV
+          cat > .env.test <<'ENV'
+          APP_ENV=test
+          APP_SECRET=ci-placeholder-not-a-secret
+          APP_SHARE_DIR=var/share
+          DEFAULT_URI=http://localhost:8000
+          DATABASE_URL="postgresql://coffeestock:coffeestock@127.0.0.1:5432/coffeestock_test?serverVersion=16&charset=utf8"
+          MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
+          MAILER_DSN=null://null
+          CORS_ALLOW_ORIGIN=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+          ENV
+
+      # In the test environment Doctrine appends its `_test` dbname suffix, so the
+      # suite opens `coffeestock_test_test` while the service above only creates
+      # `coffeestock_test`. Zenstruck Foundry resets the schema between tests but
+      # cannot create the database itself, so it has to exist first.
+      - name: Create test database
+        run: |
+          PGPASSWORD=coffeestock psql -h 127.0.0.1 -U coffeestock -d postgres \
+            -c 'CREATE DATABASE coffeestock_test_test OWNER coffeestock;'
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Validate Symfony configuration
         run: php bin/console lint:container
+
+      # Proves the migration files apply to a real PostgreSQL 16 database. The test
+      # suite rebuilds the schema from the entity mapping, so it would not catch a
+      # broken migration on its own.
+      - name: Apply migrations to the test database
+        run: php bin/console doctrine:migrations:migrate --env=test --no-interaction
 
       - name: Run test suite
         run: php bin/phpunit
