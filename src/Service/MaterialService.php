@@ -48,7 +48,7 @@ final class MaterialService
                 $errors[] = ['field' => $f, 'issue' => 'must be a decimal ≥ 0, at most 3 decimal places, ≤ 10000000.000'];
             }
         }
-        if (null !== $baseUnit && MaterialType::tryFrom($input->type) === MaterialType::RAW && '' !== $input->name
+        if (null !== $baseUnit && MaterialType::RAW === MaterialType::tryFrom($input->type) && '' !== $input->name
             && null === $this->findDuplicate($input->name)) {
             // batch_required default per OD-6: RAW gets true (DB persist below)
         }
@@ -64,7 +64,7 @@ final class MaterialService
         $material->setReorderThreshold($input->reorder_threshold);
         $material->setStocktakeThreshold($input->stocktake_threshold);
         // OD-6 default: RAW materials require batch numbers on receipts.
-        $material->setBatchRequired(MaterialType::from($input->type) === MaterialType::RAW);
+        $material->setBatchRequired(MaterialType::RAW === MaterialType::from($input->type));
 
         $this->em->persist($material);
         $this->em->flush();
