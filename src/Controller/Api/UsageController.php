@@ -20,6 +20,8 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class UsageController extends AbstractController
 {
+    use ActorTrait;
+
     public function __construct(
         private readonly UsageService $usageService,
     ) {
@@ -50,6 +52,7 @@ final class UsageController extends AbstractController
             isset($body['recorded_at']) ? (string) $body['recorded_at'] : null,
             isset($body['note']) ? (string) $body['note'] : null,
             $isWaste,
+            $this->userOrNull(),
         );
 
         if (!isset($result['entry'])) {

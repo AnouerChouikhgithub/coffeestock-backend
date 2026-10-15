@@ -9,6 +9,7 @@ use App\Entity\Material;
 use App\Entity\StockMovement;
 use App\Entity\Stocktake;
 use App\Entity\StocktakeCount;
+use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Enum\MovementType;
 use App\Enum\SourceDocumentType;
@@ -53,13 +54,13 @@ final class StocktakeService
      *
      * @return Stocktake|list<Error>
      */
-    public function createDraft(array $counts): Stocktake|array
+    public function createDraft(array $counts, ?User $actor = null): Stocktake|array
     {
         if ([] === $counts) {
             return [['field' => 'counts', 'issue' => 'must contain at least one count (REQ-051)']];
         }
 
-        $actor = $this->systemUser->get();
+        $actor = $actor ?? $this->systemUser->get();
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
         $this->em->getConnection()->beginTransaction();
@@ -121,7 +122,7 @@ final class StocktakeService
      *
      * @return Stocktake|list<Error>
      */
-    public function commit(int $stocktakeId, array $approvals): Stocktake|array
+    public function commit(int $stocktakeId, array $approvals, ?User $actor = null): Stocktake|array
     {
         $stocktake = $this->stocktakes->find($stocktakeId);
         if (!$stocktake instanceof Stocktake) {
@@ -150,7 +151,7 @@ final class StocktakeService
             $approvalByCountId[$countId] = $comment;
         }
 
-        $actor = $this->systemUser->get();
+        $actor = $actor ?? $this->systemUser->get();
         $committedAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
         $this->em->getConnection()->beginTransaction();

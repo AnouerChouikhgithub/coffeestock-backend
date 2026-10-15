@@ -15,6 +15,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ReceiptController extends AbstractController
 {
+    use ActorTrait;
+
     public function __construct(
         private readonly ReceiptService $receiptService,
         private readonly ReceiptRepository $repository,
@@ -51,6 +53,7 @@ final class ReceiptController extends AbstractController
             (string) ($body['delivery_date'] ?? ''),
             $items,
             isset($body['note']) ? (string) $body['note'] : null,
+            $this->userOrNull(),
         );
 
         if (\is_array($result)) {
