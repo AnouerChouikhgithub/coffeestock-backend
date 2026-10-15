@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Entity;
 
 use App\Entity\Supplier;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Zenstruck\Foundry\Test\ResetDatabase;
 

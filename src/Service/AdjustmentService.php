@@ -8,6 +8,7 @@ use App\Entity\Approval;
 use App\Entity\Material;
 use App\Entity\StockAdjustment;
 use App\Entity\StockMovement;
+use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Enum\MovementType;
 use App\Enum\SourceDocumentType;
@@ -45,6 +46,7 @@ final class AdjustmentService
         string $reason,
         ?string $recordedAt,
         bool $approved,
+        ?User $actor = null,
     ): array {
         $material = $this->materials->find($materialId);
         if (!$material instanceof Material) {
@@ -69,7 +71,7 @@ final class AdjustmentService
         }
 
         $signed = Quantity::normalize($signedDelta);
-        $actor = $this->systemUser->get();
+        $actor = $actor ?? $this->systemUser->get();
 
         $this->em->getConnection()->beginTransaction();
         try {

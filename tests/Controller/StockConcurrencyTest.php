@@ -29,6 +29,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class StockConcurrencyTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?KernelBrowser $cachedClient = null;
 
@@ -40,7 +41,20 @@ final class StockConcurrencyTest extends WebTestCase
 
     private function client(): KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        if (null === $this->cachedClient) {
+            $client = $this->authClient();
+
+            // The lock-timeout guard below only bounds the API writer when the
+            // request reuses THIS kernel's connection. KernelBrowser reboots the
+            // kernel after the first request (the login performed by authClient()),
+            // which hands the request a fresh connection with an unbounded
+            // lock_timeout — the writer would then wait on the rival's row lock
+            // forever and hang the entire suite.
+            $client->disableReboot();
+            $this->cachedClient = $client;
+        }
+
+        return $this->cachedClient;
     }
 
     private function em(): EntityManagerInterface

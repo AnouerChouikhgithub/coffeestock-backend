@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_username', columns: ['username'])]
-class User
+class User implements \Symfony\Component\Security\Core\User\UserInterface, \Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -54,9 +54,9 @@ class User
         return $this->username;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
-        return $this->password;
+        return '' === $this->password ? null : $this->password;
     }
 
     public function setPassword(string $password): void
@@ -87,5 +87,29 @@ class User
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->created_at;
+    }
+
+    // --- UserInterface (Phase 9 security plumbing) ---------------------------
+
+    public function getUserIdentifier(): string
+    {
+        return $this->username;
+    }
+
+    /** @return list<string> */
+    public function getRoles(): array
+    {
+        return ['ROLE_'.$this->role->value];
+    }
+
+    /**
+     * Symfony 7.3 deprecated implementing this method (use __serialize() instead).
+     * The attribute is the documented opt-in for an intentionally empty
+     * implementation, and keeps `failOnDeprecation` runs green. No plain-text
+     * credential is ever stored on this entity, so there is nothing to erase.
+     */
+    #[\Deprecated]
+    public function eraseCredentials(): void
+    {
     }
 }

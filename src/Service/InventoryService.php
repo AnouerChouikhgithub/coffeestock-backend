@@ -129,7 +129,7 @@ final class InventoryService
 
         $items = [];
         foreach ($paginator as $m) {
-            /** @var \App\Entity\StockMovement $m */
+            /* @var \App\Entity\StockMovement $m */
             $items[] = [
                 'id' => $m->getId(),
                 'movement_type' => $m->getMovementType()->value,

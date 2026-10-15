@@ -20,6 +20,8 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class StocktakeController extends AbstractController
 {
+    use ActorTrait;
+
     public function __construct(
         private readonly StocktakeService $stocktakeService,
         private readonly StocktakeRepository $repository,
@@ -48,7 +50,7 @@ final class StocktakeController extends AbstractController
             ];
         }
 
-        $result = $this->stocktakeService->createDraft($counts);
+        $result = $this->stocktakeService->createDraft($counts, $this->userOrNull());
         if ($result instanceof Stocktake) {
             return $this->json($this->resource($result), 201);
         }
@@ -86,7 +88,7 @@ final class StocktakeController extends AbstractController
             }
         }
 
-        $result = $this->stocktakeService->commit($id, $approvals);
+        $result = $this->stocktakeService->commit($id, $approvals, $this->userOrNull());
         if ($result instanceof Stocktake) {
             return $this->json($this->resource($result));
         }
@@ -127,7 +129,7 @@ final class StocktakeController extends AbstractController
 
         return [
             'id' => $stocktake->getId(),
-            'status' => $stocktake->getStatus() === StocktakeStatus::COMMITTED ? 'COMMITTED' : 'DRAFT',
+            'status' => StocktakeStatus::COMMITTED === $stocktake->getStatus() ? 'COMMITTED' : 'DRAFT',
             'taken_at' => QueryParamsHelper::atom($stocktake->getTakenAt()),
             'created_by_user_id' => $stocktake->getCreatedByUser()->getId(),
             'committed_by_user_id' => $stocktake->getCommittedByUser()?->getId(),

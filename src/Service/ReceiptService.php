@@ -10,10 +10,11 @@ use App\Entity\Receipt;
 use App\Entity\ReceiptItem;
 use App\Entity\StockMovement;
 use App\Entity\Supplier;
+use App\Entity\User;
+use App\Enum\AuditAction;
 use App\Enum\MovementType;
 use App\Enum\SourceDocumentType;
 use App\Repository\MaterialRepository;
-use App\Repository\ReceiptRepository;
 use App\Repository\SupplierRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -32,6 +33,7 @@ final class ReceiptService
         private readonly SupplierRepository $suppliers,
         private readonly MaterialRepository $materials,
         private readonly SystemUserProvider $systemUser,
+        private readonly AuditLogger $audit,
     ) {
     }
 
@@ -40,7 +42,7 @@ final class ReceiptService
      *
      * @return Receipt|list<array{field:string, issue:string}>
      */
-    public function create(int $supplierId, string $deliveryDate, array $items, ?string $note = null): Receipt|array
+    public function create(int $supplierId, string $deliveryDate, array $items, ?string $note = null, ?User $actor = null): Receipt|array
     {
         $errors = [];
 
@@ -65,7 +67,7 @@ final class ReceiptService
         }
 
         // Validate every item before touching the DB (fail before persist).
-        $actor = $this->systemUser->get();
+        $actor = $actor ?? $this->systemUser->get();
         $resolved = [];
         foreach ($items as $i => $item) {
             $prefix = 'items.'.$i;
@@ -170,6 +172,10 @@ final class ReceiptService
             }
 
             $this->em->getConnection()->commit();
+
+            // REQ-110: one audit row per stock-affecting operation, attributed to
+            // the acting authenticated user (Phase 9) or the system user fallback.
+            $this->audit->logSuccess(AuditAction::RECEIPT_CREATE, 'receipt', $receipt->getId() ?? 0, $actor);
 
             return $receipt;
         } catch (\Throwable $e) {
