@@ -69,4 +69,13 @@ class Session
     {
         return $now >= $this->expires_at;
     }
+
+    /**
+     * When the token was minted. Read for auditing and inspection, matching the
+     * other timestamped entities; the column is never mutated after creation.
+     */
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->created_at;
+    }
 }

@@ -31,8 +31,10 @@ final class TokenAuthenticator extends AbstractAuthenticator implements Authenti
     ) {
     }
 
-    public function supports(Request $request): ?bool
+    public function supports(Request $request): bool
     {
+        // Narrowed from the interface's ?bool: this authenticator either owns the
+        // request or defers, it is never "undecided".
         return null !== $request->headers->get('Authorization');
     }
 
@@ -64,8 +66,10 @@ final class TokenAuthenticator extends AbstractAuthenticator implements Authenti
         return null; // let the controller run
     }
 
-    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
+        // Narrowed from ?Response: a failure always gets the contract payload, and
+        // never "no response", which would fall through to the entry point.
         return self::unauthorized();
     }
 
