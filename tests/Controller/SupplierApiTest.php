@@ -152,4 +152,4 @@ final class SupplierApiTest extends WebTestCase
         $client->request('POST', '/api/suppliers', [], [], ['CONTENT_TYPE' => 'application/json'], '{oops}');
         self::assertResponseStatusCodeSame(400);
     }
-}
+}

@@ -40,7 +40,21 @@ final class ReceiptApiTest extends WebTestCase
         return json_decode($content, true, 512, JSON_THROW_ON_ERROR);
     }
 
-    private function makeSupplier(string $name = 'Roastery Co', bool $active = true): int    {        $id = $this->client()->request('POST', '/api/suppliers', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => $name], JSON_THROW_ON_ERROR));        $id = (int) $this->json()['id'];        if (!$active) {            $em = $this->em();            $supplier = $em->getRepository(\App\Entity\Supplier::class)->find($id);            if ($supplier instanceof \App\Entity\Supplier) {                $supplier->setIsActive(false);                $em->persist($supplier);                $em->flush();            }        }        return $id;
+    private function makeSupplier(string $name = 'Roastery Co', bool $active = true): int
+    {
+        $id = $this->client()->request('POST', '/api/suppliers', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => $name], JSON_THROW_ON_ERROR));
+        $id = (int) $this->json()['id'];
+        if (!$active) {
+            $em = $this->em();
+            $supplier = $em->getRepository(\App\Entity\Supplier::class)->find($id);
+            if ($supplier instanceof \App\Entity\Supplier) {
+                $supplier->setIsActive(false);
+                $em->persist($supplier);
+                $em->flush();
+            }
+        }
+
+        return $id;
     }
 
     private function makeMaterial(string $name, MaterialType $type, BaseUnit $unit, bool $active = true): Material

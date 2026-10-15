@@ -196,5 +196,4 @@ final class MaterialApiTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(400);
     }
-
 }

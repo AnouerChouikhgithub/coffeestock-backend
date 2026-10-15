@@ -18,6 +18,6 @@ trait ActorTrait
         /** @var User|null $user */
         $user = $this->getUser();
 
-        return $user instanceof User && $user->getId() !== null ? $user : null;
+        return $user instanceof User && null !== $user->getId() ? $user : null;
     }
 }

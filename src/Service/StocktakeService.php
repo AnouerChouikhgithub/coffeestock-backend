@@ -162,7 +162,7 @@ final class StocktakeService
                 $this->guard->lockMaterial($material->getId() ?? 0);
 
                 $delta = $count->getDelta();
-                if (bccomp($delta, '0.000', 3) === 0) {
+                if (0 === bccomp($delta, '0.000', 3)) {
                     continue; // nothing to reconcile
                 }
 

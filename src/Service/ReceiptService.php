@@ -15,7 +15,6 @@ use App\Enum\AuditAction;
 use App\Enum\MovementType;
 use App\Enum\SourceDocumentType;
 use App\Repository\MaterialRepository;
-use App\Repository\ReceiptRepository;
 use App\Repository\SupplierRepository;
 use Doctrine\ORM\EntityManagerInterface;
 

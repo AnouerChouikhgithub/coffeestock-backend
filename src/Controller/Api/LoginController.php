@@ -68,7 +68,7 @@ final class LoginController extends AbstractController
         }
 
         $token = bin2hex(random_bytes(32)); // 64 hex chars, CSPRNG
-        $session = new Session($user, hash('sha256', $token), $now->modify('+' . self::TTL_SECONDS . ' seconds'));
+        $session = new Session($user, hash('sha256', $token), $now->modify('+'.self::TTL_SECONDS.' seconds'));
         $this->em->persist($session);
         $this->em->flush();
 

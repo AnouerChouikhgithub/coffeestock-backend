@@ -92,13 +92,13 @@ final class ReceiptController extends AbstractController
             ->addOrderBy('r.id', 'DESC');
 
         if (null !== ($supplierId = $request->query->get('supplier_id'))) {
-            if (filter_var($supplierId, FILTER_VALIDATE_INT) === false) {
+            if (false === filter_var($supplierId, FILTER_VALIDATE_INT)) {
                 return ErrorResponse::validationFailed([['field' => 'supplier_id', 'issue' => 'must be an integer']]);
             }
             $qb->andWhere('r.supplier = :sid')->setParameter('sid', (int) $supplierId);
         }
         if (null !== ($materialId = $request->query->get('material_id'))) {
-            if (filter_var($materialId, FILTER_VALIDATE_INT) === false) {
+            if (false === filter_var($materialId, FILTER_VALIDATE_INT)) {
                 return ErrorResponse::validationFailed([['field' => 'material_id', 'issue' => 'must be an integer']]);
             }
             $qb->andWhere('EXISTS (SELECT ri.id FROM App\Entity\ReceiptItem ri WHERE ri.receipt = r AND ri.material = :mid)')
@@ -121,7 +121,7 @@ final class ReceiptController extends AbstractController
 
         $items = [];
         foreach ($receipts as $receipt) {
-            /** @var Receipt $receipt */
+            /* @var Receipt $receipt */
             $items[] = [
                 'id' => $receipt->getId(),
                 'supplier_id' => $receipt->getSupplier()->getId(),
