@@ -42,5 +42,6 @@
 
     <extensions>
         <bootstrap class="Zenstruck\Foundry\PHPUnit\FoundryExtension" />
+        <bootstrap class="App\Tests\Extension\ResetRateLimiterCache" />
     </extensions>
 </phpunit>

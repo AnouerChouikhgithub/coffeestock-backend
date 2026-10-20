@@ -1,0 +1,37 @@
+# Brute-force protection for POST /api/login (REQ-081).
+#
+# Two independent limiters are consumed on every attempt and both must accept:
+#
+#   login_account — 5 attempts / 15 min per normalised username. Bounds targeted
+#                   password guessing. The key is lower-cased and trimmed, so
+#                   `Manager`, `manager ` and `MANAGER` share one bucket.
+#   login_ip      — 50 attempts / 15 min per client IP. Bounds spraying across
+#                   many usernames from one host.
+#
+# The IP limit is deliberately generous: an office behind one NAT address, or a CI
+# runner, presents every user as the same client. At 20/15 min a five-person shop
+# could lock itself out simply by starting work, and a browser test suite (all
+# traffic from 127.0.0.1) exhausted it in one run. 50/15 min still caps a single
+# host at ~3 attempts per minute, while the account limiter remains the primary
+# control against guessing one password.
+#
+# Sliding windows for the account limiter mean an attacker cannot align guesses
+# to a window boundary; the IP limiter uses a cheaper fixed window because it only
+# has to blunt volume. 15 minutes is short enough that a legitimate user who
+# fumbles five times is never locked out for long, and successful logins reset
+# both counters.
+#
+# Storage is the default `cache.rate_limiter` pool (filesystem), so no Redis or
+# other infrastructure is required. Behind a reverse proxy, configure
+# framework.trusted_proxies and trusted_headers — otherwise every request looks
+# like it came from the proxy and the IP limiter would throttle all users at once.
+framework:
+    rate_limiter:
+        login_account:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+        login_ip:
+            policy: 'fixed_window'
+            limit: 50
+            interval: '15 minutes'
