@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Enum\AuditAction;
 use App\Entity\AuditLog;
 use App\Entity\Material;
+use App\Enum\AuditAction;
 use App\Repository\AuditLogRepository;
 use App\Repository\MaterialRepository;
 use App\Repository\StockMovementRepository;
@@ -74,7 +74,7 @@ final class ReportController extends AbstractController
 
         $items = [];
         foreach ($paginator->getIterator() as $material) {
-            /** @var Material $material */
+            /* @var Material $material */
             $items[] = $this->inventory->stockFor($material, $asOf);
         }
 
@@ -238,6 +238,7 @@ final class ReportController extends AbstractController
         $pagination = QueryParamsHelper::pagination($request);
         if ($pagination instanceof JsonResponse) {
             $json = $pagination;
+
             return new Response($json->getContent(), $json->getStatusCode(), [
                 'Content-Type' => 'application/json',
             ]);
@@ -362,7 +363,7 @@ final class ReportController extends AbstractController
 
         $items = [];
         foreach ($paginator as $log) {
-            /** @var AuditLog $log */
+            /* @var AuditLog $log */
             $items[] = [
                 'id' => $log->getId(),
                 'actor_user_id' => $log->getActorUser()->getId(),
@@ -393,7 +394,7 @@ final class ReportController extends AbstractController
             $out[] = \implode(',', \array_map([self::class, 'csvEscape'], $row));
         }
 
-        return \implode("\n", $out) . "\n";
+        return \implode("\n", $out)."\n";
     }
 
     private static function movementTypeString(mixed $value): string
@@ -404,7 +405,7 @@ final class ReportController extends AbstractController
     private static function csvEscape(string $value): string
     {
         if (false !== \strpos($value, ',') || false !== \strpos($value, '"') || false !== \strpos($value, "\n") || false !== \strpos($value, "\r")) {
-            return '"' . \str_replace('"', '""', $value) . '"';
+            return '"'.\str_replace('"', '""', $value).'"';
         }
 
         return $value;

@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\ConsumptionEntry;
 use App\Entity\Material;
 use App\Entity\StockMovement;
+use App\Entity\User;
 use App\Entity\WasteEntry;
 use App\Enum\AuditAction;
 use App\Enum\MovementType;
@@ -36,7 +37,7 @@ final class UsageService
     /**
      * @return array{entry: ConsumptionEntry|WasteEntry, movement: StockMovement}|Error
      */
-    public function record(int $materialId, string $quantity, ?string $recordedAt, ?string $note, bool $isWaste): array
+    public function record(int $materialId, string $quantity, ?string $recordedAt, ?string $note, bool $isWaste, ?User $actor = null): array
     {
         $material = $this->materials->find($materialId);
         if (!$material instanceof Material) {
@@ -62,7 +63,7 @@ final class UsageService
         }
 
         $signed = '-'.Quantity::normalize($quantity);
-        $actor = $this->systemUser->get();
+        $actor = $actor ?? $this->systemUser->get();
         $movementType = $isWaste ? MovementType::WASTE : MovementType::CONSUMPTION;
         $docType = $isWaste ? SourceDocumentType::WASTE_ENTRY : SourceDocumentType::CONSUMPTION_ENTRY;
 

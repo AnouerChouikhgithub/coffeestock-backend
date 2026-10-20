@@ -31,7 +31,7 @@ final class Quantity
     /** Non-zero + bounded (signed adjustments). */
     public static function isNonZero(string $value): bool
     {
-        return self::isValid($value) && bccomp($value, '0.000', 3) !== 0;
+        return self::isValid($value) && 0 !== bccomp($value, '0.000', 3);
     }
 
     /** Exact wire format: always scale 3 (REQ-010 / contract decimal rule). */

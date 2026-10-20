@@ -8,8 +8,8 @@ use App\Entity\Material;
 use App\Entity\StockMovement;
 use App\Entity\User;
 use App\Enum\BaseUnit;
-use App\Enum\MovementType;
 use App\Enum\MaterialType;
+use App\Enum\MovementType;
 use App\Enum\SourceDocumentType;
 use App\Enum\UserRole;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,6 +24,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class UsageApiTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?KernelBrowser $cachedClient = null;
 
@@ -35,7 +36,7 @@ final class UsageApiTest extends WebTestCase
 
     private function client(): KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        return $this->cachedClient ??= $this->authClient();
     }
 
     private function em(): EntityManagerInterface

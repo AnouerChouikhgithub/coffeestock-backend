@@ -25,6 +25,7 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class StocktakeApiTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?KernelBrowser $cachedClient = null;
 
@@ -36,7 +37,7 @@ final class StocktakeApiTest extends WebTestCase
 
     private function client(): KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        return $this->cachedClient ??= $this->authClient();
     }
 
     private function em(): EntityManagerInterface

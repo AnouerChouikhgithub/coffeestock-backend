@@ -15,12 +15,13 @@ use Zenstruck\Foundry\Test\ResetDatabase;
 final class ReceiptApiTest extends WebTestCase
 {
     use ResetDatabase;
+    use \App\Tests\AuthenticatedTrait;
 
     private ?KernelBrowser $cachedClient = null;
 
     private function client(): KernelBrowser
     {
-        return $this->cachedClient ??= self::createClient();
+        return $this->cachedClient ??= $this->authClient();
     }
 
     private function em(): EntityManagerInterface
@@ -41,10 +42,16 @@ final class ReceiptApiTest extends WebTestCase
 
     private function makeSupplier(string $name = 'Roastery Co', bool $active = true): int
     {
-        $this->client()->request('POST', '/api/suppliers', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => $name], JSON_THROW_ON_ERROR));
+        $id = $this->client()->request('POST', '/api/suppliers', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => $name], JSON_THROW_ON_ERROR));
         $id = (int) $this->json()['id'];
         if (!$active) {
-            $this->client()->request('POST', "/api/suppliers/{$id}/deactivate");
+            $em = $this->em();
+            $supplier = $em->getRepository(\App\Entity\Supplier::class)->find($id);
+            if ($supplier instanceof \App\Entity\Supplier) {
+                $supplier->setIsActive(false);
+                $em->persist($supplier);
+                $em->flush();
+            }
         }
 
         return $id;

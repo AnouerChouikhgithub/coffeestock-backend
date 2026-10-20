@@ -2,30 +2,50 @@ security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        App\Entity\User: 'auto'
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: username
 
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-        main:
-            lazy: true
-            provider: users_in_memory
-
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\TokenAuthenticator
+            entry_point: App\Security\TokenAuthenticator
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Public (REQ-080): health only; login is public too (unauthenticated by definition)
+        - { path: ^/api/health, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        # Managers can view audit logs (REQ-080/8.3); admins have full access
+        - { path: ^/api/audit-logs, roles: [ROLE_ADMIN, ROLE_MANAGER] }
+        # Authorization matrix per docs/api-contract.md (OD-2 baseline proposal):
+        # Material management (4/7)
+        - { path: ^/api/materials$, methods: [POST], roles: ROLE_MANAGER }
+        - { path: ^/api/materials/, methods: [PATCH], roles: ROLE_MANAGER }
+        # Suppliers (8/11/12): create/update Manager+, deactivate Admin only
+        - { path: ^/api/suppliers$, methods: [POST], roles: ROLE_MANAGER }
+        - { path: ^/api/suppliers/\d+/deactivate$, methods: [POST], roles: ROLE_ADMIN }
+        - { path: ^/api/suppliers/, methods: [PATCH], roles: ROLE_MANAGER }
+        # Receipts (13)
+        - { path: ^/api/receipts, methods: [POST], roles: ROLE_MANAGER }
+        # Adjustments (18)
+        - { path: ^/api/adjustments, methods: [POST], roles: ROLE_MANAGER }
+        # Stocktake commit (21) — Manager+; DRAFT creation stays open to all roles
+        - { path: ^/api/stocktakes/\d+/commit$, methods: [POST], roles: ROLE_MANAGER }
+        # Everything else under /api requires an authenticated user (REQ-080)
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
@@ -37,3 +57,8 @@ when@test:
                 cost: 4 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon
                 memory_cost: 10 # Lowest possible value for argon
+            App\Entity\User:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

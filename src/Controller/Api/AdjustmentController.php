@@ -18,6 +18,8 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class AdjustmentController extends AbstractController
 {
+    use ActorTrait;
+
     public function __construct(
         private readonly AdjustmentService $adjustmentService,
     ) {
@@ -37,6 +39,7 @@ final class AdjustmentController extends AbstractController
             (string) ($body['reason'] ?? ''),
             isset($body['recorded_at']) ? (string) $body['recorded_at'] : null,
             true === ($body['approved'] ?? false),
+            $this->userOrNull(),
         );
 
         if (!isset($result['adjustment'])) {
