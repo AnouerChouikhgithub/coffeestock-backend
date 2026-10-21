@@ -266,10 +266,18 @@ final class ReportApiTest extends WebTestCase
 
     public function testAuditLogsListRowsAndValidateFilters(): void
     {
-        $this->em()->persist(new AuditLog($this->user(), AuditAction::CONSUMPTION_CREATE, 'consumption_entry', 55, AuditOutcome::SUCCESS, null, new \DateTimeImmutable('2026-10-02T08:00:00Z')));
-        $this->em()->flush();
+        // Audit-log reads are Admin-only per the contract matrix (REQ-110), so this
+        // test signs in as ADMIN rather than reusing the shared MANAGER client.
+        $client = $this->authClient('ADMIN');
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $client = $this->client();
+        // The shared user()/em() helpers would boot a second kernel (WebTestCase
+        // allows one client per test), so the actor is created locally here.
+        $actor = new User('audit_seed_'.bin2hex(random_bytes(3)), UserRole::OPERATOR);
+        $em->persist($actor);
+        $em->persist(new AuditLog($actor, AuditAction::CONSUMPTION_CREATE, 'consumption_entry', 55, AuditOutcome::SUCCESS, null, new \DateTimeImmutable('2026-10-02T08:00:00Z')));
+        $em->flush();
+
         $client->request('GET', '/api/audit-logs');
         self::assertResponseIsSuccessful();
         /** @var array{total: int, items: list<array<string, mixed>>} $body */
