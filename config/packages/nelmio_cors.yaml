@@ -4,7 +4,9 @@ nelmio_cors:
         allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization']
-        expose_headers: ['Link']
+        # Content-Disposition must be readable cross-origin: the reporting page
+        # uses the server's filename for the authenticated CSV download.
+        expose_headers: ['Link', 'Content-Disposition']
         max_age: 3600
     paths:
         '^/': null
