@@ -4,6 +4,15 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
         App\Entity\User: 'auto'
 
+    # The contract matrix is cumulative (OPERATOR < MANAGER < ADMIN): an admin may
+    # do everything a manager can. User::getRoles() returns a single ROLE_* string,
+    # so without this hierarchy `roles: ROLE_MANAGER` would *deny* an ADMIN —
+    # making admins less privileged than managers on materials, receipts,
+    # adjustments and stocktake commits.
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_MANAGER]
+        ROLE_MANAGER: [ROLE_OPERATOR]
+
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         app_user_provider:
@@ -28,15 +37,17 @@ security:
         # Public (REQ-080): health only; login is public too (unauthenticated by definition)
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        # Managers can view audit logs (REQ-080/8.3); admins have full access
-        - { path: ^/api/audit-logs, roles: [ROLE_ADMIN, ROLE_MANAGER] }
+        # Audit trail is Admin-only per the contract matrix (REQ-110).
+        - { path: ^/api/audit-logs, roles: ROLE_ADMIN }
         # Authorization matrix per docs/api-contract.md (OD-2 baseline proposal):
         # Material management (4/7)
         - { path: ^/api/materials$, methods: [POST], roles: ROLE_MANAGER }
         - { path: ^/api/materials/, methods: [PATCH], roles: ROLE_MANAGER }
-        # Suppliers (8/11/12): create/update Manager+, deactivate Admin only
+        # Suppliers (8/11/12): create/update/deactivate Manager+ (contract matrix).
+        # Deactivation is reversible and does not delete history, so the contract
+        # grants it to MANAGER; ADMIN inherits it through role_hierarchy.
         - { path: ^/api/suppliers$, methods: [POST], roles: ROLE_MANAGER }
-        - { path: ^/api/suppliers/\d+/deactivate$, methods: [POST], roles: ROLE_ADMIN }
+        - { path: ^/api/suppliers/\d+/deactivate$, methods: [POST], roles: ROLE_MANAGER }
         - { path: ^/api/suppliers/, methods: [PATCH], roles: ROLE_MANAGER }
         # Receipts (13)
         - { path: ^/api/receipts, methods: [POST], roles: ROLE_MANAGER }

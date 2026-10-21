@@ -14,12 +14,19 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimit;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * POST /api/login (contract endpoint 2, REQ-081, OD-8 option A).
  * Issues an opaque bearer token backed by a Postgres session; only the token hash
  * is stored. Identical 401 payload for unknown user and wrong password.
+ *
+ * Brute-force protection (config/packages/rate_limiter.yaml): every attempt
+ * consumes an account-keyed and an IP-keyed limiter before the password is
+ * checked, so throttling can never be used to tell an existing account from an
+ * absent one.
  */
 final class LoginController extends AbstractController
 {
@@ -31,6 +38,8 @@ final class LoginController extends AbstractController
         private readonly SessionRepository $sessions,
         private readonly UserPasswordHasherInterface $hasher,
         private readonly EntityManagerInterface $em,
+        private readonly RateLimiterFactory $loginAccountLimiter,
+        private readonly RateLimiterFactory $loginIpLimiter,
     ) {
     }
 
@@ -47,6 +56,18 @@ final class LoginController extends AbstractController
             return ErrorResponse::validationFailed([
                 ['field' => 'username', 'issue' => 'username and password are required'],
             ]);
+        }
+
+        // Casing and surrounding whitespace must not create a fresh bucket.
+        $accountKey = mb_strtolower(trim($username));
+        $ipKey = $request->getClientIp() ?? 'unknown';
+
+        $accountLimit = $this->loginAccountLimiter->create($accountKey)->consume(1);
+        $ipLimit = $this->loginIpLimiter->create($ipKey)->consume(1);
+
+        $throttled = self::throttledResponse($accountLimit, $ipLimit);
+        if (null !== $throttled) {
+            return $throttled;
         }
 
         // Housekeeping: lazily drop expired sessions.
@@ -67,6 +88,11 @@ final class LoginController extends AbstractController
             );
         }
 
+        // A legitimate sign-in clears the penalty so a couple of typos do not
+        // follow the user around for the rest of the window.
+        $this->loginAccountLimiter->create($accountKey)->reset();
+        $this->loginIpLimiter->create($ipKey)->reset();
+
         $token = bin2hex(random_bytes(32)); // 64 hex chars, CSPRNG
         $session = new Session($user, hash('sha256', $token), $now->modify('+'.self::TTL_SECONDS.' seconds'));
         $this->em->persist($session);
@@ -81,5 +107,43 @@ final class LoginController extends AbstractController
                 'role' => $user->getRole()->value,
             ],
         ]);
+    }
+
+    /**
+     * Contract error payload for a throttled attempt (HTTP 429).
+     *
+     * The message is identical whether or not the account exists, and states only
+     * the cooldown, so it cannot be used to enumerate users.
+     */
+    private static function throttledResponse(RateLimit $accountLimit, RateLimit $ipLimit): ?JsonResponse
+    {
+        if ($accountLimit->isAccepted() && $ipLimit->isAccepted()) {
+            return null;
+        }
+
+        $retryAt = null;
+        foreach ([$accountLimit, $ipLimit] as $limit) {
+            if ($limit->isAccepted()) {
+                continue;
+            }
+            $candidate = $limit->getRetryAfter();
+            if (null === $retryAt || $candidate > $retryAt) {
+                $retryAt = $candidate;
+            }
+        }
+
+        $seconds = null === $retryAt ? 60 : max(1, $retryAt->getTimestamp() - time());
+
+        return new JsonResponse(
+            [
+                'error' => [
+                    'code' => 'RATE_LIMITED',
+                    'message' => sprintf('Too many sign-in attempts. Try again in %d seconds.', $seconds),
+                    'details' => [['field' => 'retry_after', 'issue' => (string) $seconds]],
+                ],
+            ],
+            Response::HTTP_TOO_MANY_REQUESTS,
+            ['Retry-After' => (string) $seconds],
+        );
     }
 }

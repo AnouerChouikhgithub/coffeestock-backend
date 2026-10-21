@@ -54,7 +54,11 @@ final class ReceiptService
             return [['field' => 'supplier_id', 'issue' => 'Supplier is inactive (SUPPLIER_INACTIVE).']];
         }
 
-        $delivery = \DateTimeImmutable::createFromFormat('Y-m-d', $deliveryDate, new \DateTimeZone('UTC'));
+        // The '!' prefix is essential: without it createFromFormat keeps the
+        // CURRENT time-of-day, so "today" parses as today 14:37 and compares
+        // greater than today 00:00 — every delivery dated today was rejected as
+        // "in the future" while the form told the user today was allowed.
+        $delivery = \DateTimeImmutable::createFromFormat('!Y-m-d', $deliveryDate, new \DateTimeZone('UTC'));
         $today = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
         if (false === $delivery) {
             $errors[] = ['field' => 'delivery_date', 'issue' => 'must be a valid YYYY-MM-DD date'];
@@ -102,7 +106,7 @@ final class ReceiptService
 
             $expiresAt = null;
             if (\is_array($batchInput) && null !== ($batchInput['expires_at'] ?? null)) {
-                $expiresAt = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $batchInput['expires_at'], new \DateTimeZone('UTC'));
+                $expiresAt = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $batchInput['expires_at'], new \DateTimeZone('UTC'));
                 if (false === $expiresAt) {
                     $errors[] = ['field' => $prefix.'.batch.expires_at', 'issue' => 'must be a valid YYYY-MM-DD date'];
                     continue;

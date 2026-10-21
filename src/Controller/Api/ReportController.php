@@ -226,7 +226,9 @@ final class ReportController extends AbstractController
             ];
         }
 
-        return CsvResponse::make(self::rowsToCsv($rows));
+        return CsvResponse::make(self::rowsToCsv($rows), [
+            'Content-Disposition' => 'attachment; filename="inventory-report.csv"',
+        ]);
     }
 
     // -------------------------------------------------------------------------
@@ -299,7 +301,9 @@ final class ReportController extends AbstractController
             ];
         }
 
-        return CsvResponse::make(self::rowsToCsv($rows));
+        return CsvResponse::make(self::rowsToCsv($rows), [
+            'Content-Disposition' => 'attachment; filename="movement-report.csv"',
+        ]);
     }
 
     // -------------------------------------------------------------------------

@@ -207,19 +207,91 @@ final class AuthorizationApiTest extends WebTestCase
         self::assertResponseStatusCodeSame(403, 'OPERATOR must not be able to commit a stocktake');
     }
 
-    public function testManagerCannotDeactivateSupplier(): void
+    /**
+     * The contract grants supplier deactivation to MANAGER (it is a soft, reversible
+     * flag flip), so an OPERATOR must be the role that is refused here.
+     */
+    public function testOperatorCannotDeactivateSupplier(): void
     {
-        $client = $this->authClient('MANAGER');
+        $client = $this->authClient('OPERATOR');
         $em = $this->em($client);
-        $supplier = new Supplier('Admin Only Co');
+        $supplier = new Supplier('Manager Only Co');
         $em->persist($supplier);
         $em->flush();
+        $id = $supplier->getId();
 
-        $client->request('POST', '/api/suppliers/'.$supplier->getId().'/deactivate');
+        $client->request('POST', "/api/suppliers/{$id}/deactivate");
 
         self::assertResponseStatusCodeSame(403);
         // The contract requires every error body to use the uniform payload shape.
         self::assertSame('FORBIDDEN', $this->json($client)['error']['code']);
+
+        // A refused request must not have changed any state.
+        $em->clear();
+        $reloaded = $em->find(Supplier::class, $id);
+        self::assertInstanceOf(Supplier::class, $reloaded);
+        self::assertTrue($reloaded->isActive(), 'a 403 must leave the supplier untouched');
+    }
+
+    public function testManagerCanDeactivateSupplier(): void
+    {
+        $client = $this->authClient('MANAGER');
+        $em = $this->em($client);
+        $supplier = new Supplier('Manager Deactivatable Co');
+        $em->persist($supplier);
+        $em->flush();
+        $id = $supplier->getId();
+
+        $client->request('POST', "/api/suppliers/{$id}/deactivate");
+
+        self::assertResponseStatusCodeSame(204);
+
+        $em->clear();
+        $reloaded = $em->find(Supplier::class, $id);
+        self::assertInstanceOf(Supplier::class, $reloaded);
+        self::assertFalse($reloaded->isActive());
+    }
+
+    // -------------------------------------------------------------------------
+    // Audit trail — Admin only per the contract matrix (REQ-110)
+    // -------------------------------------------------------------------------
+
+    public function testManagerCannotReadAuditLogs(): void
+    {
+        $client = $this->authClient('MANAGER');
+
+        $client->request('GET', '/api/audit-logs');
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertSame('FORBIDDEN', $this->json($client)['error']['code']);
+    }
+
+    public function testAdminCanReadAuditLogs(): void
+    {
+        $client = $this->authClient('ADMIN');
+
+        $client->request('GET', '/api/audit-logs');
+
+        self::assertResponseIsSuccessful();
+        self::assertArrayHasKey('items', $this->json($client));
+    }
+
+    /**
+     * Regression: User::getRoles() returns a single ROLE_* string, so before the
+     * role hierarchy existed an ADMIN was refused every `roles: ROLE_MANAGER` rule
+     * — i.e. the most privileged account could not create a material.
+     */
+    public function testAdminInheritsManagerWrites(): void
+    {
+        $client = $this->authClient('ADMIN');
+
+        $client->request('POST', '/api/materials', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'name' => 'Admin Beans',
+            'type' => 'RAW',
+            'base_unit' => 'g',
+        ], JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(201, 'ADMIN must inherit MANAGER permissions');
     }
 
     /**
@@ -273,9 +345,9 @@ final class AuthorizationApiTest extends WebTestCase
     }
 
     /**
-     * Deactivation is the one supplier write reserved for ADMIN. The pre-existing
-     * SupplierApiTest worked around that rule by flipping the flag straight in the
-     * database, so the endpoint itself had no working test; this covers it.
+     * ADMIN reaches deactivation through the role hierarchy. The pre-existing
+     * SupplierApiTest worked around the endpoint by flipping the flag straight in
+     * the database, so this is its only end-to-end coverage.
      */
     public function testAdminCanDeactivateSupplier(): void
     {
