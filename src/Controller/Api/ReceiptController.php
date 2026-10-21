@@ -109,7 +109,9 @@ final class ReceiptController extends AbstractController
             if (null === $raw) {
                 continue;
             }
-            $date = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $raw, new \DateTimeZone('UTC'));
+            // '!' resets the time to midnight; without it the filter inherits the
+            // current time and `date_from=today` hides everything dated today.
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $raw, new \DateTimeZone('UTC'));
             if (false === $date || $date->format('Y-m-d') !== $raw) {
                 return ErrorResponse::validationFailed([['field' => $param, 'issue' => 'must be a valid YYYY-MM-DD date']]);
             }
